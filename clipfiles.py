@@ -12,7 +12,6 @@ class ClipFiles(tk.Tk):
 
     def do_auth(self):
         credentials = self.get_credentials()
-        print credentials
 
     def get_credentials(self):
         # TODO: load credentials from storage, if there are any
