@@ -4,21 +4,37 @@ import ttk
 import tkSimpleDialog
 
 class LoginForm(tkSimpleDialog.Dialog):
+    def __init__(self, parent, creds):
+        self._creds = creds
+        tkSimpleDialog.Dialog.__init__(self, parent)
 
     def body(self, master):
+        self.result = None
+
         self.resizable(False, False)
         self.title("Autenticação no CLIP")
 
         ttk.Label(master, text="Identificador CLIP:").grid(row=0, sticky=tk.W)
         ttk.Label(master, text="Palavra passe:").grid(row=1, stick=tk.W)
         
-        self.e_username = ttk.Entry(master)
-        self.e_username.grid(row=0, column=1)
-        self.e_password = ttk.Entry(master, show="*")
-        self.e_password.grid(row=1, column=1)     
-
+        creds = self._creds
         self.save_user = tk.IntVar()
         self.save_pass = tk.IntVar()
+
+        self.e_username = ttk.Entry(master)
+        self.e_username.grid(row=0, column=1)
+        if "username" in creds.keys():
+            self.e_username.delete(0, tk.END)
+            self.e_username.insert(0, creds["username"])
+            self.save_user.set(1)
+
+        self.e_password = ttk.Entry(master, show="*")
+        self.e_password.grid(row=1, column=1)     
+        if "password" in creds.keys():
+            self.e_password.delete(0, tk.END)
+            self.e_password.insert(0, creds["password"])
+            self.save_pass.set(1)
+
                 
         c = ttk.Checkbutton(master, text="Guardar identificador", variable=self.save_user)
         c.grid(columnspan=2, sticky=tk.W)
@@ -29,9 +45,13 @@ class LoginForm(tkSimpleDialog.Dialog):
         return self.e_username
 
     def apply(self):
-        self.user_name = self.e_username.get()
+        self.username = self.e_username.get()
         self.password = self.e_password.get()
 
-        self.result = (self.user_name, self.password,
-                self.save_user.get(), self.save_pass.get())
+        self.result = {
+            "username": self.username, 
+            "password": self.password,
+            "save_user": self.save_user.get(),
+            "save_pass": self.save_pass.get()
+        }
 

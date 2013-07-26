@@ -3,6 +3,9 @@
 import Tkinter as tk
 import ttk
 import login
+import json
+
+CREDS_FILE="credentials.json"
 
 class ClipFiles(tk.Tk):
     def __init__(self):
@@ -12,13 +15,42 @@ class ClipFiles(tk.Tk):
 
     def do_auth(self):
         credentials = self.get_credentials()
+        if credentials == None:
+            self.destroy()
 
     def get_credentials(self):
-        # TODO: load credentials from storage, if there are any
-        return self.ask_for_credentials()
+        creds = {}
+        try:
+            creds_f = open(CREDS_FILE, "r")
+            creds = json.load(creds_f)
+            creds_f.close()
+        except IOError:
+            pass
 
-    def ask_for_credentials(self):
-        dialog = login.LoginForm(self)
+        result = self.ask_for_credentials(creds)
+        if result is None:
+            return None
+        
+        creds["username"] = result["username"]
+        creds["password"] = result["password"]
+
+        to_save = {}
+        if result["save_pass"] == 1:
+            to_save["username"] = creds["username"]
+            to_save["password"] = creds["password"]
+        elif result["save_user"] == 1:
+            to_save["username"] = creds["username"]
+        else:
+            to_save = {}
+
+        creds_f = open(CREDS_FILE, "w")
+        json.dump(to_save, creds_f)
+        creds_f.close()
+
+          
+
+    def ask_for_credentials(self, creds):
+        dialog = login.LoginForm(self, creds)
         return dialog.result
 
 
