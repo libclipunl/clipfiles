@@ -4,6 +4,8 @@ import Tkinter as tk
 import ttk
 import login
 import json
+import ClipUNL
+import sys
 
 CREDS_FILE="credentials.json"
 
@@ -12,11 +14,18 @@ class ClipFiles(tk.Tk):
         tk.Tk.__init__(self)
         self.grid()
         self.title("CLIP Files")
+        self.clip = ClipUNL.ClipUNL()
 
     def do_auth(self):
         credentials = self.get_credentials()
-        if credentials == None:
+        if credentials is None:
             self.destroy()
+            return False
+
+        
+        self.clip.login(credentials["username"],
+                credentials["password"])
+        return True
 
     def get_credentials(self):
         creds = {}
@@ -47,14 +56,17 @@ class ClipFiles(tk.Tk):
         json.dump(to_save, creds_f)
         creds_f.close()
 
-          
+        return creds
 
     def ask_for_credentials(self, creds):
         dialog = login.LoginForm(self, creds)
         return dialog.result
 
-
 if __name__ == "__main__":
     app = ClipFiles()
-    app.do_auth()
+    while not app.clip.is_logged_in():
+        if not app.do_auth():
+            sys.exit(0)
+
+    print "Login successful"
     app.mainloop()
