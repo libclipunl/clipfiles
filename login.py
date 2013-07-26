@@ -6,6 +6,7 @@ import tkSimpleDialog
 class LoginForm(tkSimpleDialog.Dialog):
 
     def body(self, master):
+        self.resizable(False, False)
         self.title("Autenticação no CLIP")
 
         ttk.Label(master, text="Identificador CLIP:").grid(row=0, sticky=tk.W)
