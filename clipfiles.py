@@ -68,5 +68,4 @@ if __name__ == "__main__":
         if not app.do_auth():
             sys.exit(0)
 
-    print "Login successful"
     app.mainloop()
