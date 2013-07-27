@@ -1,5 +1,10 @@
 #!/usr/bin/env python2
-from distutils.core import setup
+import sys
+from cx_Freeze import setup, Executable
+
+base = None
+if (sys.platform == "win32"):
+    base = "Win32GUI"    # Tells the build script to hide the console.
 
 setup(
         name='clipfiles',
@@ -13,5 +18,6 @@ download all their documents, assignments and exames, with few clicks""",
         url="https://github.com/libclipunl/clipfiles",
         py_modules=['clipfiles', 'login'],
         requires=['pyclipunl'],
-        license='MIT'
+        license='MIT',
+        executables = [Executable("clipfiles.py", base = base)]
     )
