@@ -30,8 +30,16 @@ class ClipFiles(tk.Tk):
             return toolbar
         
         def build_tree():
-            tree = ttk.Treeview(self, selectmode="extended", show="tree")
+            frame = ttk.Frame(self)
+            frame.pack(fill=tk.BOTH, expand=1)
+        
+            scroll = ttk.Scrollbar(frame, orient=tk.VERTICAL)
+            scroll.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            tree = ttk.Treeview(frame, selectmode="extended", show="tree", yscrollcommand=scroll.set)
             tree.pack(fill=tk.BOTH, expand=1)
+            
+            scroll["command"] = tree.yview
 
             return tree
 
