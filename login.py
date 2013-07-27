@@ -4,8 +4,9 @@ import ttk
 import tkSimpleDialog
 
 class LoginForm(tkSimpleDialog.Dialog):
-    def __init__(self, parent, creds):
+    def __init__(self, parent, creds, status):
         self._creds = creds
+        self._status = status
         tkSimpleDialog.Dialog.__init__(self, parent)
 
     def body(self, master):
@@ -14,22 +15,24 @@ class LoginForm(tkSimpleDialog.Dialog):
         self.resizable(False, False)
         self.title("Autenticação no CLIP")
 
-        ttk.Label(master, text="Identificador CLIP:").grid(row=0, sticky=tk.W)
-        ttk.Label(master, text="Palavra passe:").grid(row=1, stick=tk.W)
+        ttk.Label(master, text=self._status).grid(row=0, columnspan=2)
+
+        ttk.Label(master, text="Identificador CLIP:").grid(row=1, sticky=tk.W)
+        ttk.Label(master, text="Palavra passe:").grid(row=2, stick=tk.W)
         
         creds = self._creds
         self.save_user = tk.IntVar()
         self.save_pass = tk.IntVar()
 
         self.e_username = ttk.Entry(master)
-        self.e_username.grid(row=0, column=1)
+        self.e_username.grid(row=1, column=1)
         if "username" in creds.keys():
             self.e_username.delete(0, tk.END)
             self.e_username.insert(0, creds["username"])
             self.save_user.set(1)
 
         self.e_password = ttk.Entry(master, show="*")
-        self.e_password.grid(row=1, column=1)     
+        self.e_password.grid(row=2, column=1)     
         if "password" in creds.keys():
             self.e_password.delete(0, tk.END)
             self.e_password.insert(0, creds["password"])
