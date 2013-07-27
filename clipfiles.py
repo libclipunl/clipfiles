@@ -30,7 +30,7 @@ class ClipFiles(tk.Tk):
             return toolbar
         
         def build_tree():
-            tree = ttk.Treeview(self, selectmode="extended")
+            tree = ttk.Treeview(self, selectmode="extended", show="tree")
             tree.pack(fill=tk.BOTH, expand=1)
 
             return tree
@@ -55,16 +55,39 @@ class ClipFiles(tk.Tk):
     def do_download(self):
         pass
 
+    def populate_year(self, item, person, year):
+        tree = self._clip_tree
+
+        units = person.get_year(year)
+
+        for unit in units:
+            tree.insert(item, 'end', text=unit.get_name(), tags='unit')
+
+    def populate_role(self, item, person):
+        tree = self._clip_tree
+
+        years = person.get_years()
+
+        for year in years:
+            child = tree.insert(item, 'end', text=year, tags='year')
+            self.populate_year(child, person, year)
+
     def populate_tree(self):
+        # FIXME: clear the tree first
         try:
             self.set_status("A carregar dados... Por favor aguarde")
             people = self.clip.get_people()
            
             # Show all roles
+            tree = self._clip_tree
             for p in people:
-                self._clip_tree.insert('', 'end', text = p.get_role())
+                child = tree.insert('', 'end', text=p.get_role(),
+                    tags='role')
+
+                self.populate_role(child, p)
 
             self.set_status("")
+
             return True
 
         except ClipUNL.ClipUNLException:
