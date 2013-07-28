@@ -85,6 +85,7 @@ class ClipFiles(tk.Tk):
         tree = self._clip_tree
 
         units = person.get_year(year)
+        units = sorted(units, key=lambda u: u.get_name())
 
         for unit in units:
             tree.insert(item, 'end', text=unit.get_name(), tags='unit')
@@ -95,6 +96,7 @@ class ClipFiles(tk.Tk):
         tree = self._clip_tree
 
         years = person.get_years()
+        years = sorted(years, reverse = True)
 
         for year in years:
             child = tree.insert(item, 'end', text=year, tags='year')
