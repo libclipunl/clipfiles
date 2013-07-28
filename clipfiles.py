@@ -88,6 +88,8 @@ class ClipFiles(tk.Tk):
 
         for unit in units:
             tree.insert(item, 'end', text=unit.get_name(), tags='unit')
+            tree.c_people[item] = person
+
 
     def populate_role(self, item, person):
         tree = self._clip_tree
@@ -96,20 +98,24 @@ class ClipFiles(tk.Tk):
 
         for year in years:
             child = tree.insert(item, 'end', text=year, tags='year')
+            tree.c_people[child] = person
             self.populate_year(child, person, year)
 
     def populate_tree(self):
-        # FIXME: clear the tree first
         try:
             self.set_status("A carregar dados... Por favor aguarde")
             people = self.clip.get_people()
            
             # Show all roles
             tree = self._clip_tree
+            map(tree.delete, tree.get_children())
+            tree.c_people = {}
+
             for p in people:
                 child = tree.insert('', 'end', text=p.get_role(),
                     tags='role')
 
+                tree.c_people[child] = p
                 self.populate_role(child, p)
 
             self.set_status("")
