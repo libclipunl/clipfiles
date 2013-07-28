@@ -79,7 +79,61 @@ class ClipFiles(tk.Tk):
 
     def do_download(self):
         save_to = tkFileDialog.askdirectory()
-        pass
+        if len(save_to) == 0:
+            return
+        
+        self.set_status("A construir lista de ficheiros para download...")
+
+        tree = self._clip_tree
+        selection = tree.selection()
+        doc_set = set()
+
+        def get_unit_docs(unit):
+            self.set_status("A obter lista de documentos para %s..." %
+                    (unit.get_name()))
+
+            return set(unit.get_documents())
+
+        def get_year_docs(person, year):
+            units = person.get_year(year)
+            docs = set()
+            for unit in units:
+                docs = docs | get_unit_docs(unit)
+
+            return docs
+
+        def get_person_docs(person):
+            years = person.get_years()
+            docs = set()
+            for year in years:
+                docs = docs | get_year_docs(person, year)
+
+            return docs
+
+        for item in selection:
+            tags = tree.item(item, "tags")
+
+            if "doc" in tags:
+                doc = tree.c_docs[item]
+                doc_set.add(doc)
+
+            elif "unit" in tags:
+                unit = tree.c_units[item]
+                doc_set = doc_set | get_unit_docs(unit)
+
+            elif "year" in tags:
+                person = tree.c_people[item]
+                year = tree.c_years[item]
+                doc_set = doc_set | get_year_docs(person, year)
+            
+            elif "role" in tags:
+                person = tree.c_people[item]
+                doc_set = doc_set | get_person_docs(person)
+        
+        for x in doc_set:
+            print x.get_url()
+
+        self.set_status("")
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
@@ -88,8 +142,10 @@ class ClipFiles(tk.Tk):
         units = sorted(units, key=lambda u: u.get_name())
 
         for unit in units:
-            tree.insert(item, 'end', text=unit.get_name(), tags='unit')
-            tree.c_people[item] = person
+            child = tree.insert(item, 'end', text=unit.get_name(), tags='unit')
+            tree.c_people[child] = person
+            tree.c_years[child] = year 
+            tree.c_units[child] = unit
 
 
     def populate_role(self, item, person):
@@ -101,6 +157,7 @@ class ClipFiles(tk.Tk):
         for year in years:
             child = tree.insert(item, 'end', text=year, tags='year')
             tree.c_people[child] = person
+            tree.c_years[child] = year 
             self.populate_year(child, person, year)
 
     def populate_tree(self):
@@ -111,7 +168,11 @@ class ClipFiles(tk.Tk):
             # Show all roles
             tree = self._clip_tree
             map(tree.delete, tree.get_children())
+
             tree.c_people = {}
+            tree.c_years = {}
+            tree.c_units = {}
+            tree.c_docs = {}
 
             for p in people:
                 child = tree.insert('', 'end', text=p.get_role(),
