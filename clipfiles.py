@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # coding=utf-8
 import Tkinter as tk
+import tkFileDialog
 import ttk
 import login
 import json
@@ -19,15 +20,31 @@ class ClipFiles(tk.Tk):
         self._create_widgets()
 
     def _create_widgets(self):
+
         def build_toolbar():
+            def build_filter(parent):
+                frame = ttk.Frame(parent)
+                frame.pack(side=tk.RIGHT, padx=2)
+
+                label = ttk.Label(frame, text="Filtrar:")
+                label.pack(side=tk.LEFT)
+
+                entry = ttk.Entry(frame)
+                entry.pack(side=tk.RIGHT)
+
+                return frame
+
             toolbar = ttk.Frame(self, relief=tk.RAISED)
             toolbar.pack(side=tk.TOP, fill=tk.X)
 
             dl_button = ttk.Button(toolbar, text="Download",
                     command=self.do_download)
             dl_button.pack(side=tk.LEFT, padx=2, pady=2)
+        
+            build_filter(toolbar)
 
             return toolbar
+
         
         def build_tree():
             frame = ttk.Frame(self)
@@ -61,6 +78,7 @@ class ClipFiles(tk.Tk):
         pass
 
     def do_download(self):
+        save_to = tkFileDialog.askdirectory()
         pass
 
     def populate_year(self, item, person, year):
