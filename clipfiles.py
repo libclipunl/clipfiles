@@ -112,8 +112,10 @@ class ClipFiles(tk.Tk):
             return False
         
         self.set_status("A iniciar sessão no CLIP")
-        self.clip.login(credentials["username"],
-                credentials["password"])
+        self.clip.login(
+            unicode(credentials["username"]),
+            unicode(credentials["password"])
+        )
 
         if (self.clip.is_logged_in()):
             self.set_status("Sessão iniciada com sucesso")
