@@ -113,7 +113,7 @@ class Downloader():
         total_size = response.info().getheader('Content-Length').strip()
         bytes_read = 0
         
-        out = open(dl_path, "w")
+        out = open(dl_path, "wb")
 
         while True:
             chunk = response.read(BLOCK_SIZE)
