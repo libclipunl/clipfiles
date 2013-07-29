@@ -6,8 +6,12 @@ import threading
 import Queue
 import os
 import urllib2
+import time
 
 BLOCK_SIZE=1024
+
+def yield_thread():
+    time.sleep(0)
 
 def get_unit_docs(unit, set_status = None, downloader = None):
     if not set_status is None:
@@ -53,19 +57,27 @@ def do_download(parent, tree):
 
     form = DownloadForm(parent, save_to)
     form.get_file_list(tree)
+    form.wait_for()
 
     return form
 
-class Downloader(threading.Thread):
+class Downloader():
     def __init__(self, basedir, label, progress):
-        threading.Thread.__init__(self)
         self._queue = Queue.Queue()
         self._basedir = basedir
         self._label = label
         self._progress = progress
         self._quit = False
-        self._done = False
         self._downloaded = set()
+        
+        self._recreate_worker()
+
+    def _recreate_worker(self):
+        worker = threading.Thread()
+        worker = threading.Thread(target=self.run)
+
+        self._worker = worker
+        self._worker.started = False
 
     def _dl_doc(self, doc):
         unit = doc.get_curricular_unit()
@@ -99,11 +111,14 @@ class Downloader(threading.Thread):
             chunk = response.read(BLOCK_SIZE)
             bytes_read += len(chunk)
 
-            if not chunk or self._quit:
+            if not chunk or self.has_quit():
                 break
 
             out.write(chunk)
             self._progress.set(float(bytes_read) / float(total_size) * 100.0)
+            
+            # Give other threads a chance
+            yield_thread() 
 
         out.close()
 
@@ -117,30 +132,45 @@ class Downloader(threading.Thread):
 
         self._downloaded.add(doc)
         self._queue.put(doc)
+
+        worker = self._worker
+        if not worker.started:
+            worker.started = True
+            worker.start()
     
     def has_quit(self):
         return self._quit
 
-    def done(self):
-        self._done = True
-
     def quit(self):
         self._quit = True
 
+    def join(self):
+        if self.has_quit():
+            return
+
+        self._queue.join()
+        worker = self._worker
+
+        if worker.started:
+            worker.join()
+
     def run(self):
-        while not self._quit:
-            q = self._queue
-            if not q.empty():
-                doc = self._queue.get()
-                self._dl_doc(doc)
-            elif self._done:
-                self.quit()
+        print "[Downloader] starting"
+        q = self._queue
+
+        while not q.empty():
+            doc = self._queue.get()
+            self._dl_doc(doc)
+            q.task_done()
+
+        self._recreate_worker()    
+        print "[Downloader] quit"
 
 class DownloadForm(tk.Toplevel):
     def __init__(self, parent, save_to):
         tk.Toplevel.__init__(self, parent)
         self.title("Download de Documentos")
-        self.resizable(False, False)
+        #self.resizable(False, False)
 
         self._status = tk.StringVar()
         self._progress = tk.IntVar()
@@ -171,7 +201,7 @@ class DownloadForm(tk.Toplevel):
         progress.pack(fill=tk.X)
 
         button = ttk.Button(frame, text="Cancelar", command=self.cancel)
-        button.pack(side=tk.RIGHT)
+        button.pack(side=tk.BOTTOM)
 
     def add_download(self, doc):
         self._queue.put(doc)
@@ -180,16 +210,37 @@ class DownloadForm(tk.Toplevel):
     def cancel(self):
         self.set_status("A cancelar... Por favor aguarde")
         self._cancel = True
-        self._downloader.quit()
-    
+
+        worker = self._worker
+        downloader = self._downloader
+
+        downloader.quit()
+        worker.join()
+
+        self.destroy()
+
+    def wait_for(self):
+        worker = self._worker
+        while worker.is_alive():
+            try:
+                self.update()
+            except:
+                return
+
+        
     def set_status(self, msg):
         self._status.set(msg)
-        self.update()
-        pass
+        try:
+            self.update()
+        except:
+            pass
 
     def get_file_list(self, tree):
+        print "[DownloadForm] Creating worker thread"
         self._worker = threading.Thread(target=self._get_file_list,
                 args=(tree,))
+
+        print "[DownloadForm] Starting worker thread"
         self._worker.start()
 
     def _get_file_list(self, tree):
@@ -201,12 +252,16 @@ class DownloadForm(tk.Toplevel):
         cur = 0
 
         downloader = self._downloader
-        downloader.start()
+
+        print "[FileList] Loading file list"
 
         for item in selection:
             tags = tree.item(item, "tags")
             cur = cur + 1
-            
+
+            print "[FileList] Current tags %s" % (str(tags),)
+
+            docs = None
 
             if "doc" in tags:
                 doc = tree.c_docs[item]
@@ -240,6 +295,7 @@ class DownloadForm(tk.Toplevel):
             self._progress.set(val)
 
         self.set_status("Listagem dos ficheiros completa")
-        downloader.done()
         downloader.join()
-        self.destroy()
+        self.set_status("Download de documentos completo")
+
+        print "[FileList] File listing done"

@@ -102,9 +102,9 @@ class ClipFiles(tk.Tk):
         if form is None:
             return
 
-        form.transient(self)
-        form.grab_set()
-        self.wait_window(form)
+        #form.transient(self)
+        #form.grab_set()
+        #self.wait_window(form)
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
