@@ -9,6 +9,7 @@ import urllib2
 import time
 
 BLOCK_SIZE=1024
+DEF_CLIP_DIR="CLIP"
 
 def yield_thread():
     time.sleep(0)
@@ -51,9 +52,16 @@ def get_person_docs(person, set_status = None, dl = None):
     return docs
 
 def do_download(parent, tree):
-    save_to = tkFileDialog.askdirectory()
+    def_dir = os.path.expanduser("~")
+
+    save_to = tkFileDialog.askdirectory(initialdir=def_dir, 
+            title="Escolha onde quer guardar os documentos. Uma pasta de nome %s será criada." % (DEF_CLIP_DIR,), 
+            parent=parent)
+
     if len(save_to) == 0:
         return None
+
+    save_to = os.path.join(save_to, DEF_CLIP_DIR)
 
     form = DownloadForm(parent, save_to)
     form.get_file_list(tree)
