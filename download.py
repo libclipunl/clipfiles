@@ -122,6 +122,13 @@ class Downloader():
 
     def quit(self):
         set_status = self._status
+        q = self._queue
+
+        # Empty queue so we don't get stuck on it
+        while not q.empty():
+            q.get()
+            q.task_done()
+        
         if not set_status is None:
             set_status("A cancelar todos os downloads pendentes...")
 
@@ -147,7 +154,7 @@ class Downloader():
         q = self._queue
 
         while not q.empty():
-            doc = self._queue.get()
+            doc = q.get()
             self._dl_doc(doc)
             q.task_done()
 
