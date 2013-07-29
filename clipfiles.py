@@ -62,7 +62,8 @@ class ClipFiles(tk.Tk):
                     command=self.do_download)
             dl_button.pack(side=tk.LEFT, padx=2, pady=2)
         
-            build_filter(toolbar)
+            # TODO: re-enable build_filter when it is done
+            #build_filter(toolbar)
 
             return toolbar
 
