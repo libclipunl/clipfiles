@@ -6,13 +6,14 @@ import ttk
 import json
 import sys
 import traceback
+import os
 
 import ClipUNL
 
 import login
 import download
 
-CREDS_FILE="credentials.json"
+CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
 
 class Catcher: 
     def __init__(self, func, subst, widget):
