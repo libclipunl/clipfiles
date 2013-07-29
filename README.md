@@ -7,4 +7,4 @@ Screenshots
 -----------
 
 
-![clipfiles v0.0.1 working on windows](http://i.imgur.com/AgQUmIf.png?1 "Windows Version")
+![clipfiles downloading and working on Windows](http://i.imgur.com/vkPlIvG.png "Windows Version")
