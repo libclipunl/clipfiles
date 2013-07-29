@@ -8,7 +8,8 @@ import os
 import urllib2
 import time
 
-BLOCK_SIZE=1024
+# 4k ought to be enough for anybody
+BLOCK_SIZE=4*1024
 DEF_CLIP_DIR="CLIP"
 
 def yield_thread():
