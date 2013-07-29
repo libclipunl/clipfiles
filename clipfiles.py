@@ -98,6 +98,7 @@ class ClipFiles(tk.Tk):
         self.update()
         pass
 
+    # FIXME: Do not allow multiple download forms to be opened
     def do_download(self):
         form = download.do_download(self, self._clip_tree)
         if form is None:
@@ -110,11 +111,18 @@ class ClipFiles(tk.Tk):
     def populate_year(self, item, person, year):
         tree = self._clip_tree
 
+        years = person.get_years()
+        first_year = sorted(years, reverse = True)[0]
+
         units = person.get_year(year)
         units = sorted(units, key=lambda u: u.get_name())
 
+        first_person = self.clip.get_people()[0]
+
         for unit in units:
             child = tree.insert(item, 'end', text=unit.get_name(), tags='unit')
+            if year == first_year and person == first_person:
+                tree.see(child)
             tree.c_people[child] = person
             tree.c_years[child] = year 
             tree.c_units[child] = unit
@@ -127,6 +135,7 @@ class ClipFiles(tk.Tk):
 
         for year in years:
             child = tree.insert(item, 'end', text=year, tags='year')
+            tree.see(child)
             tree.c_people[child] = person
             tree.c_years[child] = year 
             self.populate_year(child, person, year)
