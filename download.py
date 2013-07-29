@@ -170,6 +170,7 @@ class DownloadForm(tk.Toplevel):
         tk.Toplevel.__init__(self, parent)
         self.title("Download de Documentos")
         #self.resizable(False, False)
+        self.geometry("600x130")
 
         self._status = tk.StringVar()
         self._progress = tk.IntVar()
@@ -190,7 +191,7 @@ class DownloadForm(tk.Toplevel):
 
     def _create_widgets(self):
         frame = ttk.Frame(self)
-        frame.pack(fill=tk.BOTH, expand=1)
+        frame.pack(fill=tk.BOTH, expand=1, padx=5, pady=5)
 
         label = ttk.Label(frame, text="", textvariable=self._status)
         label.pack(fill=tk.X)

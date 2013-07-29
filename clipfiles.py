@@ -33,6 +33,7 @@ tk.CallWrapper = Catcher
 class ClipFiles(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
+        self.geometry("660x450")
         self.grid()
         self.title("CLIP Files")
         self.clip = ClipUNL.ClipUNL()
