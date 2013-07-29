@@ -12,10 +12,6 @@ import time
 BLOCK_SIZE=4*1024
 DEF_CLIP_DIR="CLIP"
 
-def yield_thread():
-    time.sleep(0)
-
-
 def do_download(parent, tree):
     def_dir = os.path.expanduser("~")
 
@@ -28,9 +24,9 @@ def do_download(parent, tree):
 
     save_to = os.path.join(save_to, DEF_CLIP_DIR)
 
-    form = DownloadForm(parent, save_to)
+    form = DownloadForm(parent, tree, save_to)
     form.get_file_list(tree)
-    form.wait_for()
+    form.mainloop()
 
     return form
 
@@ -55,9 +51,13 @@ class Downloader():
     def _dl_doc(self, doc):
         unit = doc.get_curricular_unit()
         year = unit.get_year()
-        name = unit.get_name()
-        url = doc.get_url()
 
+        # Ugly fix: some names (Pesquisa e Otimização comes to mind) have an extra
+        # space just to mess stuff up
+        # FIXME: maybe fix this on the ClipUNL class?
+        name = unit.get_name().rstrip()
+        url = doc.get_url()
+        
         dl_dir = os.path.join(self._basedir, year, name)
         try:
             os.makedirs(dl_dir)
@@ -72,6 +72,7 @@ class Downloader():
                 doc.get_date()))
 
         dl_path = os.path.join(dl_dir, doc.get_name())
+        print "Saving to %s (file: %s)" % (dl_dir, doc.get_name())
         try:
             response = urllib2.urlopen(url)
         except Exception:
@@ -94,9 +95,6 @@ class Downloader():
             if not set_progress is None:
                 set_progress(float(bytes_read) / float(total_size) * 100.0)
             
-            # Give other threads a chance
-            yield_thread() 
-
         out.close()
 
     def add_docs(self, docs):
@@ -165,7 +163,7 @@ class Downloader():
         print "[Downloader] quit"
 
 class DownloadForm(tk.Toplevel):
-    def __init__(self, parent, save_to):
+    def __init__(self, parent, tree, save_to):
         tk.Toplevel.__init__(self, parent)
         self.title("Download de Documentos")
         #self.resizable(False, False)
@@ -176,7 +174,11 @@ class DownloadForm(tk.Toplevel):
         self._dl_progress = tk.IntVar()
         self._cancel = False
 
-        self._worker = None
+        print "[DownloadForm] Creating worker thread"
+        self._worker = threading.Thread(target=self._get_file_list,
+                args=(tree,))
+
+        print "[DownloadForm] Creating downloader object"
         self._downloader = Downloader(save_to, self.set_dl_status, self.set_dl_progress)
         self._queue = Queue.Queue()
 
@@ -218,36 +220,19 @@ class DownloadForm(tk.Toplevel):
 
         self.destroy()
 
-    def wait_for(self):
-        worker = self._worker
-        while worker.is_alive():
-            try:
-                self.update()
-            except:
-                return
-
-        
     def set_status(self, msg):
         self._status.set(msg)
-        try:
-            self.update()
-        except:
-            pass
+
+    def set_progress(self, progress):
+        self._progress.set(progress)
 
     def set_dl_status(self, msg):
         self._dl_status.set(msg)
-        try:
-            self.update()
-        except:
-            pass
 
     def set_dl_progress(self, progress):
         self._dl_progress.set(progress)
 
     def get_file_list(self, tree):
-        print "[DownloadForm] Creating worker thread"
-        self._worker = threading.Thread(target=self._get_file_list,
-                args=(tree,))
 
         print "[DownloadForm] Starting worker thread"
         self._worker.start()
@@ -257,10 +242,14 @@ class DownloadForm(tk.Toplevel):
         doc_set = set()
 
         def dl_unit_docs(unit):
-            self.set_status("A listar documentos de %s" % (unit.get_name(),))
+            name = unit.get_name()
+            print "[FileList] Getting %s document list" % (name,)
+            self.set_status("A listar documentos de %s" % (name,))
             downloader = self._downloader
 
+            print "[FileList] Getting doctypes for %s" % (name,)
             doc_types = unit.get_doctypes()
+
             all_docs = set()
             for doc_type, count in doc_types.iteritems():
                 if count > 0:
@@ -310,7 +299,7 @@ class DownloadForm(tk.Toplevel):
             tags = tree.item(item, "tags")
             cur = cur + 1
 
-            print "[FileList] Current tags %s" % (str(tags),)
+            print "[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),)
 
             if "doc" in tags:
                 doc = tree.c_docs[item]
@@ -334,7 +323,7 @@ class DownloadForm(tk.Toplevel):
                 break
             
             val = float(cur) / float(total) * 100.0
-            self._progress.set(val)
+            self.set_progress(val)
 
         print "[FileList] Waiting for downloader to finish"
         
