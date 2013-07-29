@@ -7,7 +7,6 @@ import Queue
 import os
 import urllib2
 import time
-import ClipUNL
 
 # 4k ought to be enough for anybody
 BLOCK_SIZE=4*1024
@@ -134,7 +133,8 @@ class Downloader():
             return
         else:
             q = self._queue
-            print "[Downloader] Some is waiting for me. I have %d in queue." % (len(q),)
+            print "[Downloader] Someone is waiting for me. I have %d files in queue." % \
+                    (q.qsize(),)
 
             q.join()
             worker = self._worker
@@ -253,16 +253,17 @@ class DownloadForm(tk.Toplevel):
             self.set_status("A listar documentos de %s" % (unit.get_name(),))
             downloader = self._downloader
 
-            doc_types = ClipUNL.DOC_TYPES.keys()
+            doc_types = unit.get_doctypes()
             all_docs = set()
-            for doc_type in doc_types:
-                docs = unit.get_documents(doc_type)
+            for doc_type, count in doc_types.iteritems():
+                if count > 0:
+                    docs = unit.get_documents(doc_type)
 
-                if downloader.has_quit():
-                    return None
-                downloader.add_docs(docs)
+                    if downloader.has_quit():
+                        return None
+                    downloader.add_docs(docs)
 
-                all_docs = all_docs | set(docs)
+                    all_docs = all_docs | set(docs)
 
             return set(all_docs)
 
@@ -270,7 +271,7 @@ class DownloadForm(tk.Toplevel):
             units = person.get_year(year)
             docs = set()
             for unit in units:
-                unit_docs = get_unit_docs(unit)
+                unit_docs = dl_unit_docs(unit)
                 if not unit_docs is None:
                     docs = docs | unit_docs
                 else:
@@ -282,7 +283,7 @@ class DownloadForm(tk.Toplevel):
             years = person.get_years()
             docs = set()
             for year in years:
-                year_docs = get_year_docs(person, year)
+                year_docs = dl_year_docs(person, year)
                 if not year_docs is None:
                     docs = docs | year_docs
                 else:

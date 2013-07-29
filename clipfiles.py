@@ -228,6 +228,9 @@ class ClipFiles(tk.Tk):
 if __name__ == "__main__":
     app = ClipFiles()
     while not (app.populate_tree()): pass
+
+    app.set_status("Seleccione que conteúdos deseja guardar. Prima CTRL+clique para seleccionar mais que um item.")
+
     try:
         app.mainloop()
     except Exception as e:
