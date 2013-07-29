@@ -7,6 +7,7 @@ import Queue
 import os
 import urllib2
 import time
+import ClipUNL
 
 # 4k ought to be enough for anybody
 BLOCK_SIZE=4*1024
@@ -15,42 +16,6 @@ DEF_CLIP_DIR="CLIP"
 def yield_thread():
     time.sleep(0)
 
-def get_unit_docs(unit, set_status = None, downloader = None):
-    if not set_status is None:
-        set_status("A listar documentos de %s" % (unit.get_name(),))
-    
-    docs = unit.get_documents()
-
-    if not downloader is None:
-        if downloader.has_quit():
-            return None
-        downloader.add_docs(docs)
-
-    return set(docs)
-
-def get_year_docs(person, year, set_status = None, dl = None):
-    units = person.get_year(year)
-    docs = set()
-    for unit in units:
-        unit_docs = get_unit_docs(unit, set_status, dl)
-        if not unit_docs is None:
-            docs = docs | unit_docs
-        else:
-            return None
-
-    return docs
-
-def get_person_docs(person, set_status = None, dl = None):
-    years = person.get_years()
-    docs = set()
-    for year in years:
-        year_docs = get_year_docs(person, year, set_status, dl)
-        if not year_docs is None:
-            docs = docs | year_docs
-        else:
-            return None
-
-    return docs
 
 def do_download(parent, tree):
     def_dir = os.path.expanduser("~")
@@ -71,10 +36,10 @@ def do_download(parent, tree):
     return form
 
 class Downloader():
-    def __init__(self, basedir, label, progress):
+    def __init__(self, basedir, status, progress):
         self._queue = Queue.Queue()
         self._basedir = basedir
-        self._label = label
+        self._status = status
         self._progress = progress
         self._quit = False
         self._downloaded = set()
@@ -100,10 +65,12 @@ class Downloader():
         except OSError:
             pass
         
-        self._label.set("%s por %s\n(criado em %s)" % (
-            doc.get_name(),
-            doc.get_teacher(),
-            doc.get_date()))
+        set_status = self._status
+        if not set_status is None:
+            set_status("%s por %s\n(criado em %s)" % (
+                doc.get_name(),
+                doc.get_teacher(),
+                doc.get_date()))
 
         dl_path = os.path.join(dl_dir, doc.get_name())
         try:
@@ -124,7 +91,9 @@ class Downloader():
                 break
 
             out.write(chunk)
-            self._progress.set(float(bytes_read) / float(total_size) * 100.0)
+            set_progress = self._progress
+            if not set_progress is None:
+                set_progress(float(bytes_read) / float(total_size) * 100.0)
             
             # Give other threads a chance
             yield_thread() 
@@ -139,6 +108,8 @@ class Downloader():
         if doc in self._downloaded:
             return
 
+        print "[Downloader] Document %s added" % (doc.get_name())
+
         self._downloaded.add(doc)
         self._queue.put(doc)
 
@@ -151,17 +122,25 @@ class Downloader():
         return self._quit
 
     def quit(self):
+        set_status = self._status
+        if not set_status is None:
+            set_status("A cancelar todos os downloads pendentes...")
+
         self._quit = True
 
     def join(self):
         if self.has_quit():
+            print "[Downloader] I am quitted, no need to wait for me..."
             return
+        else:
+            q = self._queue
+            print "[Downloader] Some is waiting for me. I have %d in queue." % (len(q),)
 
-        self._queue.join()
-        worker = self._worker
+            q.join()
+            worker = self._worker
 
-        if worker.started:
-            worker.join()
+            if worker.started:
+                worker.join()
 
     def run(self):
         print "[Downloader] starting"
@@ -171,6 +150,9 @@ class Downloader():
             doc = self._queue.get()
             self._dl_doc(doc)
             q.task_done()
+
+            if self.has_quit():
+                break
 
         self._recreate_worker()    
         print "[Downloader] quit"
@@ -183,15 +165,16 @@ class DownloadForm(tk.Toplevel):
 
         self._status = tk.StringVar()
         self._progress = tk.IntVar()
-        self._download = tk.StringVar()
+        self._dl_status = tk.StringVar()
         self._dl_progress = tk.IntVar()
         self._cancel = False
 
         self._worker = None
-        self._downloader = Downloader(save_to, self._download, self._dl_progress)
+        self._downloader = Downloader(save_to, self.set_dl_status, self.set_dl_progress)
         self._queue = Queue.Queue()
 
         self._create_widgets()
+        self.protocol('WM_DELETE_WINDOW', self.cancel)
 
     def _create_widgets(self):
         frame = ttk.Frame(self)
@@ -203,7 +186,7 @@ class DownloadForm(tk.Toplevel):
         progress = ttk.Progressbar(frame, orient=tk.HORIZONTAL, variable=self._progress)
         progress.pack(fill=tk.X)
 
-        label = ttk.Label(frame, text="", textvariable=self._download)
+        label = ttk.Label(frame, text="", textvariable=self._dl_status)
         label.pack(fill=tk.X)
         
         progress = ttk.Progressbar(frame, orient=tk.HORIZONTAL, variable=self._dl_progress)
@@ -215,7 +198,6 @@ class DownloadForm(tk.Toplevel):
     def add_download(self, doc):
         self._queue.put(doc)
     
-    # FIXME: Do me properly
     def cancel(self):
         self.set_status("A cancelar... Por favor aguarde")
         self._cancel = True
@@ -224,6 +206,7 @@ class DownloadForm(tk.Toplevel):
         downloader = self._downloader
 
         downloader.quit()
+        print "[CancelButton] Waiting for worker thread to finish its job"
         worker.join()
 
         self.destroy()
@@ -244,6 +227,16 @@ class DownloadForm(tk.Toplevel):
         except:
             pass
 
+    def set_dl_status(self, msg):
+        self._dl_status.set(msg)
+        try:
+            self.update()
+        except:
+            pass
+
+    def set_dl_progress(self, progress):
+        self._dl_progress.set(progress)
+
     def get_file_list(self, tree):
         print "[DownloadForm] Creating worker thread"
         self._worker = threading.Thread(target=self._get_file_list,
@@ -255,6 +248,47 @@ class DownloadForm(tk.Toplevel):
     def _get_file_list(self, tree):
         selection = tree.selection()
         doc_set = set()
+
+        def dl_unit_docs(unit):
+            self.set_status("A listar documentos de %s" % (unit.get_name(),))
+            downloader = self._downloader
+
+            doc_types = ClipUNL.DOC_TYPES.keys()
+            all_docs = set()
+            for doc_type in doc_types:
+                docs = unit.get_documents(doc_type)
+
+                if downloader.has_quit():
+                    return None
+                downloader.add_docs(docs)
+
+                all_docs = all_docs | set(docs)
+
+            return set(all_docs)
+
+        def dl_year_docs(person, year):
+            units = person.get_year(year)
+            docs = set()
+            for unit in units:
+                unit_docs = get_unit_docs(unit)
+                if not unit_docs is None:
+                    docs = docs | unit_docs
+                else:
+                    return None
+
+            return docs
+
+        def dl_person_docs(person):
+            years = person.get_years()
+            docs = set()
+            for year in years:
+                year_docs = get_year_docs(person, year)
+                if not year_docs is None:
+                    docs = docs | year_docs
+                else:
+                    return None
+
+            return docs
 
         # FIXME: Calculate total items
         total = len(selection)
@@ -270,41 +304,36 @@ class DownloadForm(tk.Toplevel):
 
             print "[FileList] Current tags %s" % (str(tags),)
 
-            docs = None
-
             if "doc" in tags:
                 doc = tree.c_docs[item]
-                docs = set()
-                docs.add(doc)
+                downloader.add_download(doc)
 
             elif "unit" in tags:
                 unit = tree.c_units[item]
-                docs = get_unit_docs(unit,
-                        self.set_status,
-                        downloader)
+                dl_unit_docs(unit)
 
             elif "year" in tags:
                 person = tree.c_people[item]
                 year = tree.c_years[item]
-                docs = get_year_docs(person,
-                        year,
-                        self.set_status,
-                        downloader)
+                dl_year_docs(person, year)
             
             elif "role" in tags:
                 person = tree.c_people[item]
-                docs = get_person_docs(person,
-                        self.set_status,
-                        downloader)
+                dl_person_docs(person)
 
-            if docs is None:
+            if downloader.has_quit():
+                print "[FileList] Downloader quitted earlier"
                 break
-
+            
             val = float(cur) / float(total) * 100.0
             self._progress.set(val)
 
-        self.set_status("Listagem dos ficheiros completa")
+        print "[FileList] Waiting for downloader to finish"
+        
+        if not downloader.has_quit():
+            self.set_status("Listagem dos ficheiros completa")
         downloader.join()
-        self.set_status("Download de documentos completo")
+        if not downloader.has_quit():
+            self.set_status("Download de documentos completo")
 
         print "[FileList] File listing done"
