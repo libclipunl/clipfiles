@@ -5,7 +5,6 @@ import tkFileDialog
 import ttk
 import json
 import sys
-import traceback
 import os
 
 import ClipUNL
