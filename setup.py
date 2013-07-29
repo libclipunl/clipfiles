@@ -16,7 +16,7 @@ download all their documents, assignments and exames, with few clicks""",
         author='David Serrano',
         author_email='david.nonamedguy@gmail.com',
         url="https://github.com/libclipunl/clipfiles",
-        py_modules=['clipfiles', 'login'],
+        #py_modules=['clipfiles', 'login', 'download'],
         requires=['pyclipunl'],
         license='MIT',
         executables = [Executable("clipfiles.py", base = base)]
