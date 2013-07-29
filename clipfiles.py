@@ -3,12 +3,32 @@
 import Tkinter as tk
 import tkFileDialog
 import ttk
-import login
 import json
-import ClipUNL
 import sys
+import traceback
+
+import ClipUNL
+
+import login
+import download
 
 CREDS_FILE="credentials.json"
+
+class Catcher: 
+    def __init__(self, func, subst, widget):
+        self.func = func 
+        self.subst = subst
+        self.widget = widget
+    def __call__(self, *args):
+        try:
+            if self.subst:
+                args = apply(self.subst, args)
+            return apply(self.func, args)
+        except SystemExit, msg:
+            raise SystemExit, msg
+        except:
+            traceback.print_exc(sys.stdout)
+tk.CallWrapper = Catcher
 
 class ClipFiles(tk.Tk):
     def __init__(self):
@@ -78,62 +98,7 @@ class ClipFiles(tk.Tk):
         pass
 
     def do_download(self):
-        save_to = tkFileDialog.askdirectory()
-        if len(save_to) == 0:
-            return
-        
-        self.set_status("A construir lista de ficheiros para download...")
-
-        tree = self._clip_tree
-        selection = tree.selection()
-        doc_set = set()
-
-        def get_unit_docs(unit):
-            self.set_status("A obter lista de documentos para %s..." %
-                    (unit.get_name()))
-
-            return set(unit.get_documents())
-
-        def get_year_docs(person, year):
-            units = person.get_year(year)
-            docs = set()
-            for unit in units:
-                docs = docs | get_unit_docs(unit)
-
-            return docs
-
-        def get_person_docs(person):
-            years = person.get_years()
-            docs = set()
-            for year in years:
-                docs = docs | get_year_docs(person, year)
-
-            return docs
-
-        for item in selection:
-            tags = tree.item(item, "tags")
-
-            if "doc" in tags:
-                doc = tree.c_docs[item]
-                doc_set.add(doc)
-
-            elif "unit" in tags:
-                unit = tree.c_units[item]
-                doc_set = doc_set | get_unit_docs(unit)
-
-            elif "year" in tags:
-                person = tree.c_people[item]
-                year = tree.c_years[item]
-                doc_set = doc_set | get_year_docs(person, year)
-            
-            elif "role" in tags:
-                person = tree.c_people[item]
-                doc_set = doc_set | get_person_docs(person)
-        
-        for x in doc_set:
-            print x.get_url()
-
-        self.set_status("")
+        download.do_download(self, self._clip_tree)
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
@@ -146,7 +111,6 @@ class ClipFiles(tk.Tk):
             tree.c_people[child] = person
             tree.c_years[child] = year 
             tree.c_units[child] = unit
-
 
     def populate_role(self, item, person):
         tree = self._clip_tree
@@ -248,4 +212,7 @@ class ClipFiles(tk.Tk):
 if __name__ == "__main__":
     app = ClipFiles()
     while not (app.populate_tree()): pass
-    app.mainloop()
+    try:
+        app.mainloop()
+    except Exception as e:
+        print e
