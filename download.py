@@ -16,6 +16,8 @@ def get_unit_docs(unit, set_status = None, downloader = None):
     docs = unit.get_documents()
 
     if not downloader is None:
+        if downloader.has_quit():
+            return None
         downloader.add_docs(docs)
 
     return set(docs)
@@ -24,7 +26,11 @@ def get_year_docs(person, year, set_status = None, dl = None):
     units = person.get_year(year)
     docs = set()
     for unit in units:
-        docs = docs | get_unit_docs(unit, set_status, dl)
+        unit_docs = get_unit_docs(unit, set_status, dl)
+        if not unit_docs is None:
+            docs = docs | unit_docs
+        else:
+            return None
 
     return docs
 
@@ -32,17 +38,23 @@ def get_person_docs(person, set_status = None, dl = None):
     years = person.get_years()
     docs = set()
     for year in years:
-        docs = docs | get_year_docs(person, year, set_status, dl)
+        year_docs = get_year_docs(person, year, set_status, dl)
+        if not year_docs is None:
+            docs = docs | year_docs
+        else:
+            return None
 
     return docs
 
 def do_download(parent, tree):
     save_to = tkFileDialog.askdirectory()
     if len(save_to) == 0:
-        return
+        return None
 
     form = DownloadForm(parent, save_to)
     form.get_file_list(tree)
+
+    return form
 
 class Downloader(threading.Thread):
     def __init__(self, basedir, label, progress):
@@ -105,6 +117,9 @@ class Downloader(threading.Thread):
 
         self._downloaded.add(doc)
         self._queue.put(doc)
+    
+    def has_quit(self):
+        return self._quit
 
     def done(self):
         self._done = True
@@ -163,9 +178,9 @@ class DownloadForm(tk.Toplevel):
     
     # FIXME: Do me properly
     def cancel(self):
+        self.set_status("A cancelar... Por favor aguarde")
         self._cancel = True
-        self.set_status("A cancelar... Por favor, aguarde.")
-        self.destroy()
+        self._downloader.quit()
     
     def set_status(self, msg):
         self._status.set(msg)
@@ -192,10 +207,10 @@ class DownloadForm(tk.Toplevel):
             tags = tree.item(item, "tags")
             cur = cur + 1
             
-            docs = set()
 
             if "doc" in tags:
                 doc = tree.c_docs[item]
+                docs = set()
                 docs.add(doc)
 
             elif "unit" in tags:
@@ -218,9 +233,13 @@ class DownloadForm(tk.Toplevel):
                         self.set_status,
                         downloader)
 
+            if docs is None:
+                break
+
             val = float(cur) / float(total) * 100.0
             self._progress.set(val)
 
+        self.set_status("Listagem dos ficheiros completa")
         downloader.done()
         downloader.join()
         self.destroy()

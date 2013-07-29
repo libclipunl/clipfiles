@@ -98,7 +98,13 @@ class ClipFiles(tk.Tk):
         pass
 
     def do_download(self):
-        download.do_download(self, self._clip_tree)
+        form = download.do_download(self, self._clip_tree)
+        if form is None:
+            return
+
+        form.transient(self)
+        form.grab_set()
+        self.wait_window(form)
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
