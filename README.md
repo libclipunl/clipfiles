@@ -49,7 +49,7 @@ Instalação
 
 O instalador mais recente para Windows está disponível em:
 
-http://nng.is-a-geek.net/clipfiles/clipfiles.exe
+http://nng.is-a-geek.net/clipfiles/win/clipfiles.exe
 
 Clique no link acima, siga as instruções que lhe aparecem no ecrã, e desfruta do programa.
 
