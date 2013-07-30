@@ -1,7 +1,7 @@
 clipfiles
 =========
 
-* [Instalador para Windows](http://bit.ly/clipfiles)
+* [Instalador para Windows](http://nng.is-a-geek.net/clipfiles/win/clipfiles.exe)
 * [Versão _Portable_](http://bit.ly/clipfiles_portable)
 
 Um programa para descarregar documentos do CLIP.
@@ -50,7 +50,7 @@ Instalação
 
 Os pacotes mais recentes para Windows estão disponívei sem:
 
-* http://bit.ly/clipfiles (Instalador para Windows XP/Vista/7/8)
+* http://nng.is-a-geek.net/clipfiles/win/clipfiles.exe (Instalador para Windows XP/Vista/7/8)
 * http://bit.ly/clipfiles_portable (Verão portátil, sem instalador)
 
 Recomenda-se o uso do instalador, tendo em conta que basta seguit as instruções que lhe aparecem no ecrã.
