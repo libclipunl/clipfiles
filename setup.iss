@@ -29,8 +29,6 @@ SolidCompression=yes
 
 [Languages]
 Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
-Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
-
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
