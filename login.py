@@ -3,6 +3,7 @@ import Tkinter as tk
 import ttk
 import tkSimpleDialog
 
+# FIXME: Give alternate icon
 class LoginForm(tkSimpleDialog.Dialog):
     def __init__(self, parent, creds, status):
         self._creds = creds

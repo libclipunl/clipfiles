@@ -6,6 +6,14 @@ import threading
 import Queue
 import os
 import urllib2
+import sys
+
+# FIXME: Create better icon for downloading files
+ICON_FILE=None
+if sys.platform.startswith("win32"):
+    ICON_FILE=os.path.join("img", "clip_icon.ico")
+if sys.platform.startswith("darwin"):
+    ICON_FILE=os.path.join("img", "clip_icon.icns") 
 
 # 4k ought to be enough for anybody
 BLOCK_SIZE=4*1024
@@ -29,7 +37,6 @@ def do_download(parent, tree):
 
     form = DownloadForm(parent, tree, save_to)
     form.get_file_list(tree)
-    form.mainloop()
 
     return form
 
@@ -171,6 +178,7 @@ class DownloadForm(tk.Toplevel):
         self.title("Download de Documentos")
         #self.resizable(False, False)
         self.geometry("600x130")
+        self.wm_iconbitmap(ICON_FILE)
 
         self._status = tk.StringVar()
         self._progress = tk.IntVar()
@@ -235,6 +243,12 @@ class DownloadForm(tk.Toplevel):
 
     def set_dl_progress(self, progress):
         self._dl_progress.set(progress)
+
+    def is_working(self):
+        downloader = self._downloader
+        worker = self._worker
+
+        return not (worker.is_alive() or downloader.has_quit())
 
     def get_file_list(self, tree):
         dbg("[DownloadForm] Starting worker thread")
@@ -336,4 +350,5 @@ class DownloadForm(tk.Toplevel):
         if not downloader.has_quit():
             self.set_status("Download de documentos completo")
 
+        downloader.quit()
         dbg("[FileList] File listing done")

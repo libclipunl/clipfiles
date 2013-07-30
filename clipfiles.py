@@ -6,6 +6,7 @@ import ttk
 import json
 import sys
 import os
+import traceback
 
 import ClipUNL
 
@@ -13,6 +14,12 @@ import login
 import download
 
 CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
+
+ICON_FILE=None
+if sys.platform.startswith("win32"):
+    ICON_FILE=os.path.join("img", "clip_icon.ico")
+if sys.platform.startswith("darwin"):
+    ICON_FILE=os.path.join("img", "clip_icon.icns") 
 
 class Catcher: 
     def __init__(self, func, subst, widget):
@@ -28,16 +35,18 @@ class Catcher:
             raise SystemExit, msg
         except:
             traceback.print_exc(sys.stdout)
+
 tk.CallWrapper = Catcher
 
 class ClipFiles(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.geometry("660x450")
-        self.grid()
         self.title("CLIP Files")
+        self.wm_iconbitmap(ICON_FILE)
+        self.grid()
+
         self.clip = ClipUNL.ClipUNL()
-        
         self._create_widgets()
 
     def _create_widgets(self):
@@ -99,15 +108,12 @@ class ClipFiles(tk.Tk):
         self.update()
         pass
 
-    # FIXME: Do not allow multiple download forms to be opened
     def do_download(self):
         form = download.do_download(self, self._clip_tree)
         if form is None:
             return
 
-        #form.transient(self)
-        #form.grab_set()
-        #self.wait_window(form)
+        form.mainloop()
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
