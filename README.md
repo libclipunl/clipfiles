@@ -1,7 +1,8 @@
 clipfiles
 =========
 
-###[Instalador para Windows](http://nng.is-a-geek.net/clipfiles/win/clipfiles.exe)
+* [Instalador para Windows](http://bit.ly/clipfiles)
+* [Versão _Portable_](http://bit.ly/clipfiles_portable)
 
 Um programa para descarregar documentos do CLIP.
 Este programa foi concebido para todos os alunos da FCT/UNL que dependem do CLIP para aceder a
@@ -47,11 +48,12 @@ Instalação
 
 ###Windows
 
-O instalador mais recente para Windows está disponível em:
+Os pacotes mais recentes para Windows estão disponívei sem:
 
-http://nng.is-a-geek.net/clipfiles/win/clipfiles.exe
+* http://bit.ly/clipfiles (Instalador para Windows XP/Vista/7/8)
+* http://bit.ly/clipfiles_portable (Verão portátil, sem instalador)
 
-Clique no link acima, siga as instruções que lhe aparecem no ecrã, e desfruta do programa.
+Recomenda-se o uso do instalador, tendo em conta que basta seguit as instruções que lhe aparecem no ecrã.
 
 ###Linux
 
