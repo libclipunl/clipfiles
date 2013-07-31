@@ -434,7 +434,7 @@ class DownloadForm(tk.Toplevel):
                 elif "year" in tags:
                     person = tree.c_people[item]
                     year = tree.c_years[item]
-                    total += len(dl_year_docs(person, year))
+                    dl_year_docs(person, year)
                 
                 elif "role" in tags:
                     person = tree.c_people[item]
