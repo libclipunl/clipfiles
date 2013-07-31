@@ -7,6 +7,7 @@ import json
 import sys
 import os
 import traceback
+import threading
 
 import ClipUNL
 
@@ -20,6 +21,11 @@ if sys.platform.startswith("win32"):
     ICON_FILE=os.path.join("img", "clip_icon.ico")
 if sys.platform.startswith("darwin"):
     ICON_FILE=os.path.join("img", "clip_icon.icns") 
+    
+DEBUG=False
+
+def dbg(msg):
+    if DEBUG: print msg
 
 class Catcher: 
     def __init__(self, func, subst, widget):
@@ -75,7 +81,6 @@ class ClipFiles(tk.Tk):
             #build_filter(toolbar)
 
             return toolbar
-
         
         def build_tree():
             frame = ttk.Frame(self)
@@ -105,7 +110,6 @@ class ClipFiles(tk.Tk):
 
     def set_status(self, msg):
         self._status.set(msg)
-        self.update()
         pass
 
     def do_download(self):
@@ -114,6 +118,20 @@ class ClipFiles(tk.Tk):
             return
 
         form.mainloop()
+
+    def populate_unit(self, item, person, unit):
+        tree = self._clip_tree
+
+        doctypes = unit.get_doctypes()
+        doctypes = filter(lambda (k,v): v > 0,
+                unit.get_doctypes().iteritems())
+        doctypes = sorted(doctypes, 
+                key=lambda dt: ClipUNL.DOC_TYPES[dt[0]])
+
+        for (doctype, count) in doctypes:
+            child = tree.insert(item, 'end', 
+                    text=ClipUNL.DOC_TYPES[doctype],
+                    tags='doctype')
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
@@ -134,6 +152,8 @@ class ClipFiles(tk.Tk):
             tree.c_years[child] = year 
             tree.c_units[child] = unit
 
+            self.populate_unit(child, person, unit)
+
     def populate_role(self, item, person):
         tree = self._clip_tree
 
@@ -149,10 +169,22 @@ class ClipFiles(tk.Tk):
 
     def populate_tree(self):
         try:
+            def do_populate(clip, tree, people):
+
+                for p in people:
+                    child = tree.insert('', 'end', text=p.get_role(),
+                        tags='role')
+
+                    tree.c_people[child] = p
+                    self.populate_role(child, p)
+
+                app.set_status("""Seleccione que conteúdos deseja guardar. \
+Prima CTRL+clique para seleccionar mais que um item.""")
+            
+            clip = self.clip
+            people = clip.get_people()
             self.set_status("A carregar dados... Por favor aguarde")
-            people = self.clip.get_people()
            
-            # Show all roles
             tree = self._clip_tree
             map(tree.delete, tree.get_children())
 
@@ -160,15 +192,10 @@ class ClipFiles(tk.Tk):
             tree.c_years = {}
             tree.c_units = {}
             tree.c_docs = {}
-
-            for p in people:
-                child = tree.insert('', 'end', text=p.get_role(),
-                    tags='role')
-
-                tree.c_people[child] = p
-                self.populate_role(child, p)
-
-            self.set_status("")
+                
+            thread = threading.Thread(target=do_populate,
+                    args=(clip, tree, people))
+            thread.start()
 
             return True
 
@@ -179,7 +206,7 @@ class ClipFiles(tk.Tk):
         
 
     def do_auth(self, msg):
-        self.set_status("A obter credenciais de CLIP")
+        self.set_status("A obter credenciais do CLIP")
         credentials = self.get_credentials(msg)
         if credentials is None:
             self.destroy()
@@ -222,9 +249,12 @@ class ClipFiles(tk.Tk):
         else:
             to_save = {}
 
-        creds_f = open(CREDS_FILE, "w")
-        json.dump(to_save, creds_f)
-        creds_f.close()
+        try:
+            creds_f = open(CREDS_FILE, "w")
+            json.dump(to_save, creds_f)
+            creds_f.close()
+        except IOError:
+            pass
 
         return creds
 
@@ -233,10 +263,13 @@ class ClipFiles(tk.Tk):
         return dialog.result
 
 if __name__ == "__main__":
-    app = ClipFiles()
-    while not (app.populate_tree()): pass
+    def populate_tree(app):
+        while not (app.populate_tree()):
+            pass
 
-    app.set_status("Seleccione que conteúdos deseja guardar. Prima CTRL+clique para seleccionar mais que um item.")
+    
+    app = ClipFiles()
+    populate_tree(app)
 
     try:
         app.mainloop()

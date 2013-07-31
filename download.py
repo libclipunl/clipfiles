@@ -27,7 +27,7 @@ def do_download(parent, tree):
     def_dir = os.path.expanduser("~")
 
     save_to = tkFileDialog.askdirectory(initialdir=def_dir, 
-            title="Escolha onde quer guardar os documentos. Uma pasta de nome %s ser· criada." % (DEF_CLIP_DIR,), 
+            title="Escolha onde quer guardar os documentos. Uma pasta de nome %s ser√° criada." % (DEF_CLIP_DIR,), 
             parent=parent)
 
     if len(save_to) == 0:
@@ -61,7 +61,7 @@ class Downloader():
         unit = doc.get_curricular_unit()
         year = unit.get_year()
 
-        # Ugly fix: some names (Pesquisa e OtimizaÁ„o comes to mind) have an extra
+        # Ugly fix: some names (Pesquisa e Otimiza√ß√£o comes to mind) have an extra
         # space just to mess stuff up
         # FIXME: maybe fix this on the ClipUNL class?
         name = unit.get_name().rstrip()
