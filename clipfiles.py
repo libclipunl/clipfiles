@@ -156,8 +156,7 @@ class ClipFiles(tk.Tk):
             tree.c_people[child] = person
             tree.c_years[child] = year 
             tree.c_units[child] = unit
-
-            self.populate_unit(child, person, unit)
+            unit.tree_item = child
 
     def populate_role(self, item, person):
         tree = self._clip_tree
@@ -184,6 +183,14 @@ class ClipFiles(tk.Tk):
 
                         tree.c_people[child] = p
                         self.populate_role(child, p)
+
+                    for p in people:
+                        years = p.get_years()
+                        for year in years:
+                            units = p.get_year(year)
+                            for unit in units:
+                                child = unit.tree_item
+                                self.populate_unit(child, p, unit) 
 
                     app.set_status("""Seleccione que conteúdos deseja guardar. \
 Prima CTRL+clique para seleccionar mais que um item.""")
