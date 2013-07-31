@@ -76,6 +76,9 @@ class ClipFiles(tk.Tk):
 
         self.clip = ClipUNL.ClipUNL()
         self._create_widgets()
+        self._dl_forms = []
+        
+        self.protocol('WM_DELETE_WINDOW', self.close)
 
     def _create_widgets(self):
 
@@ -144,12 +147,26 @@ class ClipFiles(tk.Tk):
         self._status.set(msg)
         pass
 
+    def close(self):
+        # If the main window gets closed, we don't really for
+        # anything. Abandon ship!
+        for form in self._dl_forms:
+            try:
+                form.cancel()
+            except:
+                pass
+
+        self.destroy()
+        sys.exit(0)
+
+
     def do_download(self):
         tree = self._clip_tree
         form = download.do_download(self, tree)
         if form is None:
             return
 
+        self._dl_forms.append(form)
         form.mainloop()
 
     def do_about(self):

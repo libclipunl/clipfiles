@@ -131,7 +131,7 @@ class Downloader():
     def has_quit(self):
         return self._quit
 
-    def quit(self):
+    def quit(self, allok=False):
         set_status = self._status
         q = self._queue
 
@@ -140,7 +140,7 @@ class Downloader():
             q.get()
             q.task_done()
         
-        if not set_status is None:
+        if not set_status is None and not allok:
             set_status("A cancelar todos os downloads pendentes...")
 
         self._quit = True
@@ -284,8 +284,6 @@ class DownloadForm(tk.Toplevel):
         self._worker.start()
 
     def _get_file_list(self, tree):
-        selection = tree.selection()
-        doc_set = set()
 
         def dl_unit_docs(unit, doctype=None):
             name = unit.get_name()
@@ -341,48 +339,55 @@ class DownloadForm(tk.Toplevel):
 
             return docs
 
-        # FIXME: Calculate total items
-        total = len(selection)
-        cur = 0
+        try:
+            selection = tree.selection()
+            doc_set = set()
 
-        downloader = self._downloader
+            # FIXME: Calculate total items
+            total = len(selection)
+            cur = 0
 
-        dbg("[FileList] Loading file list")
+            downloader = self._downloader
 
-        for item in selection:
-            tags = tree.item(item, "tags")
-            cur = cur + 1
+            dbg("[FileList] Loading file list")
 
-            dbg("[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),))
+            for item in selection:
+                tags = tree.item(item, "tags")
+                cur = cur + 1
 
-            if "doc" in tags:
-                doc = tree.c_docs[item]
-                downloader.add_download(doc)
+                dbg("[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),))
 
-            elif "doctype" in tags:
-                unit = tree.c_units[item]
-                doctype = tree.c_doctypes[item]
-                dl_unit_docs(unit, doctype)
+                if "doc" in tags:
+                    doc = tree.c_docs[item]
+                    downloader.add_download(doc)
 
-            elif "unit" in tags:
-                unit = tree.c_units[item]
-                dl_unit_docs(unit)
+                elif "doctype" in tags:
+                    unit = tree.c_units[item]
+                    doctype = tree.c_doctypes[item]
+                    dl_unit_docs(unit, doctype)
 
-            elif "year" in tags:
-                person = tree.c_people[item]
-                year = tree.c_years[item]
-                dl_year_docs(person, year)
-            
-            elif "role" in tags:
-                person = tree.c_people[item]
-                dl_person_docs(person)
+                elif "unit" in tags:
+                    unit = tree.c_units[item]
+                    dl_unit_docs(unit)
 
-            if downloader.has_quit():
-                dbg("[FileList] Downloader quitted earlier")
-                break
-            
-            val = float(cur) / float(total) * 100.0
-            self.set_progress(val)
+                elif "year" in tags:
+                    person = tree.c_people[item]
+                    year = tree.c_years[item]
+                    dl_year_docs(person, year)
+                
+                elif "role" in tags:
+                    person = tree.c_people[item]
+                    dl_person_docs(person)
+
+                if downloader.has_quit():
+                    dbg("[FileList] Downloader quitted earlier")
+                    break
+                
+                val = float(cur) / float(total) * 100.0
+                self.set_progress(val)
+        except tk.TclError:
+            dbg("[FileList] A tcl error happened...")
+
 
         dbg("[FileList] Waiting for downloader to finish")
         
@@ -392,5 +397,5 @@ class DownloadForm(tk.Toplevel):
         if not downloader.has_quit():
             self.set_status("Download de documentos completo")
 
-        downloader.quit()
+        downloader.quit(True)
         dbg("[FileList] File listing done")
