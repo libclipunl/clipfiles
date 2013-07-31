@@ -7,6 +7,7 @@ import Queue
 import os
 import urllib2
 import sys
+import subprocess
 
 # FIXME: Create better icon for downloading files
 ICON_FILE=None
@@ -184,6 +185,7 @@ class DownloadForm(tk.Toplevel):
         self._dl_status = tk.StringVar()
         self._dl_progress = tk.IntVar()
         self._cancel = False
+        self._save_to = save_to
 
         dbg("[DownloadForm] Creating worker thread")
         self._worker = threading.Thread(target=self._get_file_list,
@@ -212,11 +214,36 @@ class DownloadForm(tk.Toplevel):
         progress = ttk.Progressbar(frame, orient=tk.HORIZONTAL, variable=self._dl_progress)
         progress.pack(fill=tk.X)
 
-        button = ttk.Button(frame, text="Cancelar", command=self.cancel)
-        button.pack(side=tk.BOTTOM)
+        button_frame = ttk.Frame(frame)
+        button_frame.pack(fill=tk.X, side=tk.BOTTOM)
+
+        button = ttk.Button(button_frame, text="Cancelar", command=self.cancel)
+        button.pack(side=tk.RIGHT, padx=3)
+
+        button = ttk.Button(button_frame, text="Abrir Pasta", command=self.open_folder)
+        button.pack(side=tk.RIGHT, padx=3)
 
     def add_download(self, doc):
         self._queue.put(doc)
+
+    def open_folder(self):
+        # We gotta do this platform specific...
+        save_to = self._save_to
+        try:
+            if sys.platform == "win32":
+                os.startfile(save_to)
+                #subprocess.Popen(['start', save_to])
+            elif sys.platform == "darwin":
+                subprocess.Popen(['open', save_to])
+            else:
+                # In BSD and Linux this should work, right?
+                # If there's no xdg-open, well, we're doomed
+                subprocess.Popen(['xdg-open', save_to])
+                
+        except:
+            # If this doesn't work, let's rely on user instinct ;)
+            # He/She will probably click the button again until it works...
+            pass
     
     def cancel(self):
         self.set_status("A cancelar... Por favor aguarde")
