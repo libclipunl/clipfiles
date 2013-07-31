@@ -1,7 +1,13 @@
 #!/usr/bin/env python2
 import sys
 import os
+import subprocess
+import traceback
+
 from cx_Freeze import setup, Executable
+from clipfiles import VERSION
+
+ISS_FILE="setup.iss"
 
 base = None
 icon = None
@@ -25,7 +31,7 @@ build_exe_opt = {
 
 setup(
         name='clipfiles',
-        version='0.0.2',
+        version=VERSION,
         description='Download all your CLIP files',
         long_description="""This program allows people with credentials
 to the UNL (Universidade Nova de Lisboa) CLIP system, to
@@ -41,3 +47,22 @@ download all their documents, assignments and exames, with few clicks""",
             'build_exe': build_exe_opt
         }
     )
+
+if sys.platform == "win32":
+    try:
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "build":
+                # Run Inno Setup compiler
+                call = [
+                    "ISCC.EXE",
+                    "/dMyAppVersion=%s" % (VERSION,),
+                    ISS_FILE
+                ]
+                print call
+                subprocess.call(call)
+
+                print "Inno Setup package build successfully"
+    except:
+        traceback.print_exc(sys.stdout)
+        print "Unable to build Inno setup package"
+

@@ -14,6 +14,8 @@ import ClipUNL
 import login
 import download
 
+VERSION="0.0.3"
+
 CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
 
 ICON_FILE=None
@@ -277,6 +279,12 @@ Prima CTRL+clique para seleccionar mais que um item.""")
         return dialog.result
 
 if __name__ == "__main__":
+    # Check if only asking for version
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-v":
+            print VERSION
+            sys.exit(0)
+
     def populate_tree(app):
         while not (app.populate_tree()):
             pass

@@ -6,7 +6,7 @@
 #define MyAppPublisher "David Serrano"
 #define MyAppURL "https://github.com/libclipunl/clipfiles/"
 #define MyAppExeName "clipfiles.exe"
-#define MyAppVersion "0.0.2"
+; #define MyAppVersion ""
 #define MyBuildDir "build\exe.win32-2.7\"
 
 [Setup]
