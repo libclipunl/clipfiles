@@ -241,6 +241,9 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
                         tree.c_people[child] = p
                         self.populate_role(child, p)
 
+                    app.set_status("""Seleccione que conteúdos deseja guardar. \
+Prima CTRL+clique para seleccionar mais que um item.""")
+
                     for p in people:
                         years = p.get_years()
                         for year in years:
@@ -254,9 +257,6 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
                                     # If that is the case, let it be and move on...
                                     pass
 
-
-                    app.set_status("""Seleccione que conteúdos deseja guardar. \
-Prima CTRL+clique para seleccionar mais que um item.""")
                 except tk.TclError:
                     # If there's a TclError, most likely we're
                     # quitting
