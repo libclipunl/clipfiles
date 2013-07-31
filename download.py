@@ -183,6 +183,8 @@ class DownloadForm(tk.Toplevel):
         self.geometry("600x130")
         self.wm_iconbitmap(ICON_FILE)
 
+        self._cancel_text = tk.StringVar()
+        self._cancel_text.set("Cancelar")
         self._status = tk.StringVar()
         self._progress = tk.IntVar()
         self._dl_status = tk.StringVar()
@@ -220,7 +222,8 @@ class DownloadForm(tk.Toplevel):
         button_frame = ttk.Frame(frame)
         button_frame.pack(fill=tk.X, side=tk.BOTTOM)
 
-        button = ttk.Button(button_frame, text="Cancelar", command=self.cancel)
+        button = ttk.Button(button_frame, text="Cancelar", command=self.cancel, 
+                textvariable=self._cancel_text)
         button.pack(side=tk.RIGHT, padx=3)
 
         button = ttk.Button(button_frame, text="Abrir Pasta", command=self.open_folder)
@@ -249,6 +252,10 @@ class DownloadForm(tk.Toplevel):
             pass
     
     def cancel(self):
+        # We've already done the cancelation dance... Why repeat it?
+        if self._cancel:
+            return
+
         self.set_status("A cancelar... Por favor aguarde")
         self._cancel = True
 
@@ -396,6 +403,7 @@ class DownloadForm(tk.Toplevel):
         downloader.join()
         if not downloader.has_quit():
             self.set_status("Download de documentos completo")
+            self._cancel_text.set("Fechar")
 
         downloader.quit(True)
         dbg("[FileList] File listing done")
