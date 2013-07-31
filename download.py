@@ -52,7 +52,6 @@ class Downloader():
         self._recreate_worker()
 
     def _recreate_worker(self):
-        worker = threading.Thread()
         worker = threading.Thread(target=self.run)
 
         self._worker = worker
