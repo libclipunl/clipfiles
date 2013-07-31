@@ -16,8 +16,11 @@ import login
 import download
 
 VERSION="0.0.3"
-
-CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
+PORTABLE=False
+if not PORTABLE:
+    CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
+else:
+    CREDS_FILE=".clip_credentials.json"
 
 ICON_FILE=None
 IMAGE_DIR="img"
@@ -67,7 +70,7 @@ class ClipFiles(tk.Tk):
         self._images = load_images(IMAGES)
 
         self.geometry("660x450")
-        self.title("CLIP Files")
+        self.title("CLIP Files v%s" % (VERSION,))
         self.wm_iconbitmap(ICON_FILE)
         self.grid()
 
@@ -142,7 +145,8 @@ class ClipFiles(tk.Tk):
         pass
 
     def do_download(self):
-        form = download.do_download(self, self._clip_tree)
+        tree = self._clip_tree
+        form = download.do_download(self, tree)
         if form is None:
             return
 
