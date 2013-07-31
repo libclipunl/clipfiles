@@ -321,7 +321,11 @@ class DownloadForm(tk.Toplevel):
 
         self._file_status.set("Descarregados %d de %d ficheiros %s" % (finished, added, error_str))
 
-        val = float(finished + errors) / float(added) * 100.0
+        if added == 0:
+            val = float(finished + errors) / float(added) * 100.0
+        else:
+            val = 0
+
         self.set_progress(val)
         
 
