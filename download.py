@@ -302,9 +302,7 @@ class DownloadForm(tk.Toplevel):
 
     def is_working(self):
         downloader = self._downloader
-        worker = self._worker
-
-        return not (worker.is_alive() or downloader.has_quit())
+        return not downloader.has_quit()
 
     def get_file_list(self, tree):
         dbg("[DownloadForm] Starting worker thread")
