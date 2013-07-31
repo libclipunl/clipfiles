@@ -5,6 +5,7 @@ clipfiles
 * [Versão _Portable_](http://bit.ly/clipfiles_portable)
 
 Um programa para descarregar documentos do CLIP.
+
 Este programa foi concebido para todos os alunos da FCT/UNL que dependem do CLIP para aceder a
 documentos importantes, nomeadamente testes e exames de anos anteriores tal como acetatos, entre outros
 tipos de documentos.
