@@ -174,15 +174,21 @@ class ClipFiles(tk.Tk):
         try:
             def do_populate(clip, tree, people):
 
-                for p in people:
-                    child = tree.insert('', 'end', text=p.get_role(),
-                        tags='role')
+                try:
+                    for p in people:
+                        child = tree.insert('', 'end',
+                                text=p.get_role(),
+                                tags='role')
 
-                    tree.c_people[child] = p
-                    self.populate_role(child, p)
+                        tree.c_people[child] = p
+                        self.populate_role(child, p)
 
-                app.set_status("""Seleccione que conteúdos deseja guardar. \
+                    app.set_status("""Seleccione que conteúdos deseja guardar. \
 Prima CTRL+clique para seleccionar mais que um item.""")
+                except tk.TclError:
+                    # If there's a TclError, most likely we're
+                    # quitting
+                    return
             
             clip = self.clip
             people = clip.get_people()
@@ -213,7 +219,11 @@ Prima CTRL+clique para seleccionar mais que um item.""")
         self.set_status("A obter credenciais do CLIP")
         credentials = self.get_credentials(msg)
         if credentials is None:
-            self.destroy()
+            try:
+                self.destroy()
+            except tk.TclError:
+                pass
+
             return False
         
         self.set_status("A iniciar sessão no CLIP")
