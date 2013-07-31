@@ -103,14 +103,14 @@ class ClipFiles(tk.Tk):
                     compound=tk.TOP,
                     image = self._images["download"]
                     )
-            dl_button.pack(side=tk.LEFT, padx=2, pady=2)
+            dl_button.pack(side=tk.LEFT, pady=2)
 
             dl_button = tk.Button(toolbar, text="Ajuda",
                     command=self.do_about,
                     compound=tk.TOP,
                     image = self._images["about"]
                     )
-            dl_button.pack(side=tk.LEFT, padx=2, pady=2)
+            dl_button.pack(side=tk.LEFT, pady=2)
         
             # TODO: re-enable build_filter when it is done
             #build_filter(toolbar)
