@@ -5,22 +5,21 @@ import subprocess
 import traceback
 
 from cx_Freeze import setup, Executable
-from clipfiles import VERSION
+from clipfiles import VERSION, IMAGES, ICON_FILE
 
 ISS_FILE="setup.iss"
 
 base = None
-icon = None
+icon = ICON_FILE
 includes = []
 
 if sys.platform == "win32":
     base = "Win32GUI"    # Tells the build script to hide the console.
-    icon = os.path.join("img", "clip_icon.ico")
-elif sys.platform == "darwin":
-    icon = os.path.join("img", "clip_icon.icns")
 
 if not icon is None:
     includes.append(icon)
+
+includes = includes + IMAGES.values()
 
 build_exe_opt = {
         "optimize" : 2,

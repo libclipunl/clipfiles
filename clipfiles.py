@@ -2,6 +2,7 @@
 # coding=utf-8
 import Tkinter as tk
 import tkFileDialog
+import tkMessageBox
 import ttk
 import json
 import sys
@@ -19,12 +20,26 @@ VERSION="0.0.3"
 CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
 
 ICON_FILE=None
+IMAGE_DIR="img"
 if sys.platform.startswith("win32"):
-    ICON_FILE=os.path.join("img", "clip_icon.ico")
+    ICON_FILE=os.path.join(IMAGE_DIR, "clip_icon.ico")
 if sys.platform.startswith("darwin"):
-    ICON_FILE=os.path.join("img", "clip_icon.icns") 
+    ICON_FILE=os.path.join(IMAGE_DIR, "clip_icon.icns") 
+
+IMAGES={
+        "download": os.path.join(IMAGE_DIR, "download.ppm"),
+        "about": os.path.join(IMAGE_DIR, "about.ppm")
+        }
     
 DEBUG=False
+
+def load_images(images):
+    loaded_images = {}
+    for name, image in IMAGES.iteritems():
+        loaded_images[name] = tk.PhotoImage(file=image)
+
+    return loaded_images
+
 
 def dbg(msg):
     if DEBUG: print msg
@@ -49,6 +64,8 @@ tk.CallWrapper = Catcher
 class ClipFiles(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
+        self._images = load_images(IMAGES)
+
         self.geometry("660x450")
         self.title("CLIP Files")
         self.wm_iconbitmap(ICON_FILE)
@@ -75,8 +92,18 @@ class ClipFiles(tk.Tk):
             toolbar = ttk.Frame(self, relief=tk.RAISED)
             toolbar.pack(side=tk.TOP, fill=tk.X)
 
-            dl_button = ttk.Button(toolbar, text="Download",
-                    command=self.do_download)
+            dl_button = tk.Button(toolbar, text="Download",
+                    command=self.do_download,
+                    compound=tk.TOP,
+                    image = self._images["download"]
+                    )
+            dl_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+            dl_button = tk.Button(toolbar, text="Ajuda",
+                    command=self.do_about,
+                    compound=tk.TOP,
+                    image = self._images["about"]
+                    )
             dl_button.pack(side=tk.LEFT, padx=2, pady=2)
         
             # TODO: re-enable build_filter when it is done
@@ -120,6 +147,15 @@ class ClipFiles(tk.Tk):
             return
 
         form.mainloop()
+
+    def do_about(self):
+        tkMessageBox.showinfo("Acerca de CLIP Files v%s" % (VERSION,), 
+                """CLIP Files v%s (C) 2003 David Serrano
+
+Site: https://github.com/libclipunl/clipfiles
+E-Mail: appclipfiles@gmail.com
+
+Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
 
     def populate_unit(self, item, person, unit):
         tree = self._clip_tree
