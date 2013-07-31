@@ -189,7 +189,7 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
 
         for (doctype, count) in doctypes:
             child = tree.insert(item, 'end', 
-                    text=ClipUNL.DOC_TYPES[doctype],
+                    text="%s (%d)" % (ClipUNL.DOC_TYPES[doctype], count),
                     tags='doctype')
             tree.c_people[child] = person
             tree.c_units[child] = unit
