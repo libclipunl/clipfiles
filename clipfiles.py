@@ -259,7 +259,12 @@ Prima CTRL+clique para seleccionar mais que um item.""")
 
                 except tk.TclError:
                     # If there's a TclError, most likely we're
-                    # quitting
+                    # quitting (on Windows at least)
+                    return
+
+                except RuntimeError:
+                    # Error happened? Better quit!
+                    # (Same thing as above, but on Linux a least...)
                     return
             
             clip = self.clip

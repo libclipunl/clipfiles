@@ -148,12 +148,14 @@ class Downloader():
         return self._quit
 
     def quit(self, allok=False):
+        dbg("[Downloader] Asked to quit...")
+
         set_status = self._status
         q = self._queue
 
         # Empty queue so we don't get stuck on it
         while not q.empty():
-            q.get()
+            q.get_nowait()
             q.task_done()
         
         if not set_status is None and not allok:
@@ -321,7 +323,7 @@ class DownloadForm(tk.Toplevel):
 
         self._file_status.set("Descarregados %d de %d ficheiros %s" % (finished, added, error_str))
 
-        if added == 0:
+        if added > 0:
             val = float(finished + errors) / float(added) * 100.0
         else:
             val = 0
@@ -450,16 +452,16 @@ class DownloadForm(tk.Toplevel):
 
 
         dbg("[FileList] Waiting for downloader to finish")
-        self.update_progress()
         
         if not downloader.has_quit():
             self.set_status("Listagem dos ficheiros completa")
+
         downloader.join()
+
         if not downloader.has_quit():
             self.set_status("Download de documentos completo")
             self._cancel_text.set("Fechar")
-        
-        self.update_progress()
+            self.update_progress()
+            downloader.quit(True)
 
-        downloader.quit(True)
         dbg("[FileList] File listing done")
