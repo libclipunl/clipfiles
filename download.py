@@ -122,6 +122,7 @@ class Downloader():
 
     def add_doc(self, doc):
         if doc in self._downloaded:
+            dbg("[Downloader] Document %s has already been downloaded" % (doc.get_name()))
             return
 
         dbg("[Downloader] Document %s added" % (doc.get_name()))
@@ -318,7 +319,7 @@ class DownloadForm(tk.Toplevel):
         if errors > 0:
             error_str = "(%d ficheiros não descarregados)" % (errors,)
 
-        self._file_status.set("Descarregados %d de %d ficheiros %s" % (errors + finished, added, error_str))
+        self._file_status.set("Descarregados %d de %d ficheiros %s" % (finished, added, error_str))
 
         val = float(finished + errors) / float(added) * 100.0
         self.set_progress(val)
@@ -382,6 +383,19 @@ class DownloadForm(tk.Toplevel):
                     return None
 
             return docs
+        
+        # A reduce would work here, but meh...
+        def ancestor_selected(tree, item, selection):
+            parent = tree.parent(item)
+            if parent in selection:
+                return True
+
+            while parent != '':
+                parent = tree.parent(parent)
+                if parent in selection:
+                    return True
+            
+            return False
 
         try:
             selection = tree.selection()
@@ -393,6 +407,8 @@ class DownloadForm(tk.Toplevel):
 
             for item in selection:
                 tags = tree.item(item, "tags")
+                if ancestor_selected(tree, item, selection):
+                    continue
 
                 dbg("[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),))
 
