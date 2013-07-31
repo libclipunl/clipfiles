@@ -51,7 +51,10 @@ class Downloader():
         self._status = status
         self._progress = progress
         self._quit = False
+
         self._downloaded = set()
+        self._finished = set()
+        self._error = set()
         
         self._recreate_worker()
 
@@ -69,9 +72,10 @@ class Downloader():
         # space just to mess stuff up
         # FIXME: maybe fix this on the ClipUNL class?
         name = unit.get_name().rstrip()
+        doctype_desc = doc.get_doctype_desc()
         url = doc.get_url()
         
-        dl_dir = os.path.join(self._basedir, year, name)
+        dl_dir = os.path.join(self._basedir, year, name, doctype_desc)
         try:
             os.makedirs(dl_dir)
         except OSError:
@@ -89,6 +93,7 @@ class Downloader():
         try:
             response = urllib2.urlopen(url)
         except Exception:
+            self._error.add(doc)
             return
         
         total_size = response.info().getheader('Content-Length').strip()
@@ -109,6 +114,7 @@ class Downloader():
                 set_progress(float(bytes_read) / float(total_size) * 100.0)
             
         out.close()
+        self._finished.add(doc)
 
     def add_docs(self, docs):
         for doc in docs:
@@ -127,6 +133,15 @@ class Downloader():
         if not worker.started:
             worker.started = True
             worker.start()
+
+    def get_finished(self):
+        return self._finished
+
+    def get_addded(self):
+        return self._downloaded
+
+    def get_errors(self):
+        return self._error
     
     def has_quit(self):
         return self._quit
@@ -180,12 +195,13 @@ class DownloadForm(tk.Toplevel):
         tk.Toplevel.__init__(self, parent)
         self.title("Download de Documentos")
         #self.resizable(False, False)
-        self.geometry("600x130")
+        self.geometry("600x150")
         self.wm_iconbitmap(ICON_FILE)
 
         self._cancel_text = tk.StringVar()
         self._cancel_text.set("Cancelar")
         self._status = tk.StringVar()
+        self._file_status = tk.StringVar()
         self._progress = tk.IntVar()
         self._dl_status = tk.StringVar()
         self._dl_progress = tk.IntVar()
@@ -210,6 +226,9 @@ class DownloadForm(tk.Toplevel):
         label = ttk.Label(frame, text="", textvariable=self._status)
         label.pack(fill=tk.X)
 
+        label = ttk.Label(frame, text="", textvariable=self._file_status)
+        label.pack(fill=tk.X)
+
         progress = ttk.Progressbar(frame, orient=tk.HORIZONTAL, variable=self._progress)
         progress.pack(fill=tk.X)
 
@@ -228,9 +247,6 @@ class DownloadForm(tk.Toplevel):
 
         button = ttk.Button(button_frame, text="Abrir Pasta", command=self.open_folder)
         button.pack(side=tk.RIGHT, padx=3)
-
-    def add_download(self, doc):
-        self._queue.put(doc)
 
     def open_folder(self):
         # We gotta do this platform specific...
@@ -278,6 +294,7 @@ class DownloadForm(tk.Toplevel):
         self._dl_status.set(msg)
 
     def set_dl_progress(self, progress):
+        self.update_progress()
         self._dl_progress.set(progress)
 
     def is_working(self):
@@ -289,6 +306,23 @@ class DownloadForm(tk.Toplevel):
     def get_file_list(self, tree):
         dbg("[DownloadForm] Starting worker thread")
         self._worker.start()
+
+    def update_progress(self):
+        downloader = self._downloader
+
+        finished = len(downloader.get_finished())
+        added = len(downloader.get_addded())
+        errors = len(downloader.get_errors())
+
+        error_str = ""
+        if errors > 0:
+            error_str = "(%d ficheiros não descarregados)" % (errors,)
+
+        self._file_status.set("Descarregados %d de %d ficheiros %s" % (errors + finished, added, error_str))
+
+        val = float(finished + errors) / float(added) * 100.0
+        self.set_progress(val)
+        
 
     def _get_file_list(self, tree):
 
@@ -304,6 +338,7 @@ class DownloadForm(tk.Toplevel):
                 doctypes = unit.get_doctypes()
                 doctypes = filter(lambda (k,v): v > 0,
                         unit.get_doctypes().iteritems())
+
             else:
                 # I put zero just because. It doesn't get used
                 doctypes = [(doctype, 0)]
@@ -320,6 +355,8 @@ class DownloadForm(tk.Toplevel):
 
                 all_docs = all_docs | set(docs)
 
+
+            #self.update_progress()
             return set(all_docs)
 
         def dl_year_docs(person, year):
@@ -350,17 +387,12 @@ class DownloadForm(tk.Toplevel):
             selection = tree.selection()
             doc_set = set()
 
-            # FIXME: Calculate total items
-            total = len(selection)
-            cur = 0
-
             downloader = self._downloader
 
             dbg("[FileList] Loading file list")
 
             for item in selection:
                 tags = tree.item(item, "tags")
-                cur = cur + 1
 
                 dbg("[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),))
 
@@ -380,7 +412,7 @@ class DownloadForm(tk.Toplevel):
                 elif "year" in tags:
                     person = tree.c_people[item]
                     year = tree.c_years[item]
-                    dl_year_docs(person, year)
+                    total += len(dl_year_docs(person, year))
                 
                 elif "role" in tags:
                     person = tree.c_people[item]
@@ -389,14 +421,16 @@ class DownloadForm(tk.Toplevel):
                 if downloader.has_quit():
                     dbg("[FileList] Downloader quitted earlier")
                     break
+
+                self.update_progress()
                 
-                val = float(cur) / float(total) * 100.0
-                self.set_progress(val)
+
         except tk.TclError:
             dbg("[FileList] A tcl error happened...")
 
 
         dbg("[FileList] Waiting for downloader to finish")
+        self.update_progress()
         
         if not downloader.has_quit():
             self.set_status("Listagem dos ficheiros completa")
@@ -404,6 +438,8 @@ class DownloadForm(tk.Toplevel):
         if not downloader.has_quit():
             self.set_status("Download de documentos completo")
             self._cancel_text.set("Fechar")
+        
+        self.update_progress()
 
         downloader.quit(True)
         dbg("[FileList] File listing done")

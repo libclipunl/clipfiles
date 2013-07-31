@@ -246,8 +246,14 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
                         for year in years:
                             units = p.get_year(year)
                             for unit in units:
-                                child = unit.tree_item
-                                self.populate_unit(child, p, unit) 
+                                try:
+                                    child = unit.tree_item
+                                    self.populate_unit(child, p, unit) 
+                                except AttributeError:
+                                    # For some reason a unit may be without tree_item
+                                    # If that is the case, let it be and move on...
+                                    pass
+
 
                     app.set_status("""Seleccione que conteúdos deseja guardar. \
 Prima CTRL+clique para seleccionar mais que um item.""")
