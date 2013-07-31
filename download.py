@@ -27,6 +27,9 @@ def dbg(msg):
 def do_download(parent, tree):
     def_dir = os.path.expanduser("~")
 
+    if len(tree.selection()) == 0:
+        return None
+
     save_to = tkFileDialog.askdirectory(initialdir=def_dir, 
             title="Escolha onde quer guardar os documentos. Uma pasta de nome %s será criada." % (DEF_CLIP_DIR,), 
             parent=parent)
