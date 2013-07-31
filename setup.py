@@ -7,6 +7,8 @@ import traceback
 from cx_Freeze import setup, Executable
 from clipfiles import VERSION, IMAGES, ICON_FILE
 
+import distutils.util
+
 ISS_FILE="setup.iss"
 
 base = None
@@ -63,9 +65,12 @@ if len(sys.argv) > 0 and sys.argv[1] == "build":
     print "Deleting Fat"
     import shutil
     for f in to_delete:
-        to_del = os.path.join("build", "exe.%s-2.7" % (sys.platform,),f)
-        print "Removing: %s" % (to_del,)
-        shutil.rmtree(to_del)
+        try:
+            to_del = os.path.join("build", "exe.%s-2.7" % (distutils.util.get_platform(),),f)
+            shutil.rmtree(to_del)
+            print "Removed: %s" % (to_del,)
+        except:
+            pass
 
 if sys.platform == "win32":
     try:
