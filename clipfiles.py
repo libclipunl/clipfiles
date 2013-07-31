@@ -132,6 +132,9 @@ class ClipFiles(tk.Tk):
             child = tree.insert(item, 'end', 
                     text=ClipUNL.DOC_TYPES[doctype],
                     tags='doctype')
+            tree.c_people[child] = person
+            tree.c_units[child] = unit
+            tree.c_doctypes[child] = doctype
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
@@ -191,6 +194,7 @@ Prima CTRL+clique para seleccionar mais que um item.""")
             tree.c_people = {}
             tree.c_years = {}
             tree.c_units = {}
+            tree.c_doctypes = {}
             tree.c_docs = {}
                 
             thread = threading.Thread(target=do_populate,

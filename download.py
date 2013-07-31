@@ -18,7 +18,7 @@ if sys.platform.startswith("darwin"):
 # 4k ought to be enough for anybody
 BLOCK_SIZE=4*1024
 DEF_CLIP_DIR="CLIP"
-DEBUG=False
+DEBUG=True
 
 def dbg(msg):
     if DEBUG: print msg
@@ -257,25 +257,33 @@ class DownloadForm(tk.Toplevel):
         selection = tree.selection()
         doc_set = set()
 
-        def dl_unit_docs(unit):
+        def dl_unit_docs(unit, doctype=None):
             name = unit.get_name()
             dbg("[FileList] Getting %s document list" % (name,))
             self.set_status("A listar documentos de %s" % (name,))
             downloader = self._downloader
 
-            dbg("[FileList] Getting doctypes for %s" % (name,))
-            doc_types = unit.get_doctypes()
+            doctypes = None
+            if doctype is None:
+                dbg("[FileList] Getting doctypes for %s" % (name,))
+                doctypes = unit.get_doctypes()
+                doctypes = filter(lambda (k,v): v > 0,
+                        unit.get_doctypes().iteritems())
+            else:
+                # I put zero just because. It doesn't get used
+                doctypes = [(doctype, 0)]
+
+            dbg("[FileList] Doctypes: %s" % (str(doctypes),))
 
             all_docs = set()
-            for doc_type, count in doc_types.iteritems():
-                if count > 0:
-                    docs = unit.get_documents(doc_type)
+            for (doctype_, count) in doctypes:
+                docs = unit.get_documents(doctype_)
 
-                    if downloader.has_quit():
-                        return None
-                    downloader.add_docs(docs)
+                if downloader.has_quit():
+                    return None
+                downloader.add_docs(docs)
 
-                    all_docs = all_docs | set(docs)
+                all_docs = all_docs | set(docs)
 
             return set(all_docs)
 
@@ -320,6 +328,11 @@ class DownloadForm(tk.Toplevel):
             if "doc" in tags:
                 doc = tree.c_docs[item]
                 downloader.add_download(doc)
+
+            elif "doctype" in tags:
+                unit = tree.c_units[item]
+                doctype = tree.c_doctypes[item]
+                dl_unit_docs(unit, doctype)
 
             elif "unit" in tags:
                 unit = tree.c_units[item]
