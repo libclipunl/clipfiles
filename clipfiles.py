@@ -197,21 +197,19 @@ already running. Will be fixed, don't worry")
                 dl_form.cancel()
 
         tree = self._clip_tree
-        logger.debug("Download process is starting")
-        form = download.do_download(self, tree)
+        form = download.do_download(self, tree, logger)
         if form is None:
             logger.warn("User failed to select save directory")
             return
 
         self._dl_form = form
-        logger.log("Download started")
         form.mainloop()
 
     def do_about(self):
         logger = self.logger
         logger.log("Showing about message box")
         tkMessageBox.showinfo("Acerca de CLIP Files v%s" % (VERSION,), 
-                """CLIP Files v%s (C) 2003 David Serrano
+                """CLIP Files v%s (C) 2013 David Serrano
 
 Site: https://github.com/libclipunl/clipfiles
 E-Mail: appclipfiles@gmail.com
