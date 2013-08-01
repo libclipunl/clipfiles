@@ -2,7 +2,10 @@ clipfiles
 =========
 
 * [Instalador para Windows](https://bitly.com/clipfiles+)
-* [Versão _Portable_](http://bit.ly/clipfiles_portable)
+* [Versão _Portable_ para Windows](http://bit.ly/clipfiles_portable)
+* [Código-fonte](http://nng.is-a-geek.net/clipfiles/src/clipfiles_v0.0.3_src)
+* [Mirror no Dropbox](http://bit.ly/clipfiles_dropbox)
+* [Página no Facebook](http://fb.com/AppCLIPFiles)
 
 Um programa para descarregar documentos do CLIP.
 
@@ -58,7 +61,9 @@ Recomenda-se o uso do instalador, tendo em conta que basta seguit as instruçõe
 
 ###Linux
 
-Pacotes de instalação disponíveis em breve. Por enquanto, poderá instalar a partir da fonte.
+Pacotes de instalação disponíveis em breve. Por enquanto, poderá instalar a partir da fonte:
+
+* http://nng.is-a-geek.net/clipfiles/src/clipfiles_v0.0.3_src.zip
 
 ###Mac
 
@@ -66,7 +71,17 @@ Em teoria este programa é capaz de correr em sistemas Mac. Porém, ainda não t
 de pôr essa teoria à prova, visto que não disponho de um Mac. Se algum proprietário de Mac dispuser
 de algum do seu tempo (tal como o seu Mac), instruções e instaladores poderão ser feitos.
 
+Por enquanto pode correr a partir da fonte:
+
+* http://nng.is-a-geek.net/clipfiles/src/clipfiles_v0.0.3_src.zip
+
 ###A partir da fonte
+
+Há um pacote com as dependências incluídas:
+
+http://nng.is-a-geek.net/clipfiles/src/clipfiles_v0.0.3_src.zip
+
+Em Linux e Mac (OSX) basta executar o ficheiro clipfiles.py para inciar a aplicação.
 
 O **clipfiles** foi desenvolvido em **Python 2.7**. Se tiver o **Python 2.7** no seu sistema, basta
 seguir as instruções abaixo descritas.
