@@ -5,6 +5,7 @@ import tkFileDialog
 import threading
 import Queue
 import os
+import urllib
 import urllib2
 import sys
 import subprocess
@@ -19,13 +20,10 @@ if sys.platform.startswith("darwin"):
 # 4k ought to be enough for anybody
 BLOCK_SIZE=4*1024
 DEF_CLIP_DIR="CLIP"
-DEBUG=False
 
-def dbg(msg):
-    if DEBUG: print msg
-
-def do_download(parent, tree):
+def do_download(parent, tree, logger):
     def_dir = os.path.expanduser("~")
+    logger.debug("Download process is starting")
 
     if len(tree.selection()) == 0:
         return None
@@ -39,17 +37,21 @@ def do_download(parent, tree):
 
     save_to = os.path.join(save_to, DEF_CLIP_DIR)
 
-    form = DownloadForm(parent, tree, save_to)
+    form = DownloadForm(parent, tree, save_to, logger)
     form.get_file_list(tree)
+   
+    logger.log("Download started")
 
     return form
 
 class Downloader():
-    def __init__(self, basedir, status, progress):
+    def __init__(self, basedir, status, progress, logger):
         self._queue = Queue.Queue()
         self._basedir = basedir
         self._status = status
         self._progress = progress
+        self._logger = logger
+
         self._quit = False
 
         self._downloaded = set()
@@ -65,6 +67,8 @@ class Downloader():
         self._worker.started = False
 
     def _dl_doc(self, doc):
+        logger = self._logger
+
         unit = doc.get_curricular_unit()
         year = unit.get_year()
 
@@ -73,9 +77,13 @@ class Downloader():
         # FIXME: maybe fix this on the ClipUNL class?
         name = unit.get_name().rstrip()
         doctype_desc = doc.get_doctype_desc()
+
         url = doc.get_url()
+
+        doc_name = doc.get_name()
         
-        dl_dir = os.path.join(self._basedir, year, name, doctype_desc)
+        sub_dir = os.path.join(year, name, doctype_desc)
+        dl_dir = os.path.join(self._basedir, sub_dir)
         try:
             os.makedirs(dl_dir)
         except OSError:
@@ -84,18 +92,19 @@ class Downloader():
         set_status = self._status
         if not set_status is None:
             set_status("%s por %s\n(criado em %s)" % (
-                doc.get_name(),
+                doc_name,
                 doc.get_teacher(),
                 doc.get_date()))
 
-        dl_path = os.path.join(dl_dir, doc.get_name())
-        dbg("Saving to %s (file: %s)" % (dl_dir, doc.get_name()))
+        dl_path = os.path.join(dl_dir, doc_name)
         try:
             response = urllib2.urlopen(url)
-        except Exception:
+        except Exception as e:
+            logger.error("[%s] %s (%s)" % (doc_name, url, str(e),))
             self._error.add(doc)
             return
         
+        logger.log("Saving to '%s'" % (os.path.join(sub_dir, doc_name),))
         total_size = response.info().getheader('Content-Length').strip()
         bytes_read = 0
         
@@ -121,11 +130,13 @@ class Downloader():
             self.add_doc(doc)
 
     def add_doc(self, doc):
+        logger = self._logger
+
         if doc in self._downloaded:
-            dbg("[Downloader] Document %s has already been downloaded" % (doc.get_name()))
+            logger.warn("Document %s has already been downloaded" % (doc.get_name()))
             return
 
-        dbg("[Downloader] Document %s added" % (doc.get_name()))
+        logger.debug("[Downloader] Document %s added" % (doc.get_name()))
 
         self._downloaded.add(doc)
         self._queue.put(doc)
@@ -148,7 +159,8 @@ class Downloader():
         return self._quit
 
     def quit(self, allok=False):
-        dbg("[Downloader] Asked to quit...")
+        logger = self._logger
+        logger.debug("Asked to quit...")
 
         set_status = self._status
         q = self._queue
@@ -164,12 +176,14 @@ class Downloader():
         self._quit = True
 
     def join(self):
+        logger = self._logger
+
         if self.has_quit():
-            dbg("[Downloader] I am quitted, no need to wait for me...")
+            logger.debug("I am quitted, no need to wait for me...")
             return
         else:
             q = self._queue
-            dbg("[Downloader] Someone is waiting for me. I have %d files in queue." % \
+            logger.debug("Someone is waiting for me. I have %d files in queue." % \
                     (q.qsize(),))
 
             q.join()
@@ -179,7 +193,9 @@ class Downloader():
                 worker.join()
 
     def run(self):
-        dbg("[Downloader] starting")
+        logger = self._logger
+
+        logger.debug("Starting downloader")
         q = self._queue
 
         while not q.empty():
@@ -191,10 +207,10 @@ class Downloader():
                 break
 
         self._recreate_worker()    
-        dbg("[Downloader] quit")
+        logger.debug("Downloader is idle")
 
 class DownloadForm(tk.Toplevel):
-    def __init__(self, parent, tree, save_to):
+    def __init__(self, parent, tree, save_to, logger):
         tk.Toplevel.__init__(self, parent)
         self.title("Download de Documentos")
         #self.resizable(False, False)
@@ -210,13 +226,15 @@ class DownloadForm(tk.Toplevel):
         self._dl_progress = tk.IntVar()
         self._cancel = False
         self._save_to = save_to
+        self._logger = logger
 
-        dbg("[DownloadForm] Creating worker thread")
+        logger.debug("Creating worker thread")
         self._worker = threading.Thread(target=self._get_file_list,
                 args=(tree,))
 
-        dbg("[DownloadForm] Creating downloader object")
-        self._downloader = Downloader(save_to, self.set_dl_status, self.set_dl_progress)
+        logger.debug("Creating downloader object")
+        self._downloader = Downloader(save_to, self.set_dl_status,
+                self.set_dl_progress, logger)
         self._queue = Queue.Queue()
 
         self._create_widgets()
@@ -275,6 +293,8 @@ class DownloadForm(tk.Toplevel):
         if self._cancel:
             return
 
+        logger = self._logger
+
         self.set_status("A cancelar... Por favor aguarde")
         self._cancel = True
 
@@ -282,8 +302,9 @@ class DownloadForm(tk.Toplevel):
         downloader = self._downloader
 
         downloader.quit()
-        dbg("[CancelButton] Waiting for worker thread to finish its job")
+        logger.debug("Waiting for worker thread to finish its job")
         worker.join()
+        logger.debug("Worker thread is done")
 
         self.destroy()
 
@@ -305,8 +326,11 @@ class DownloadForm(tk.Toplevel):
         return not downloader.has_quit()
 
     def get_file_list(self, tree):
-        dbg("[DownloadForm] Starting worker thread")
-        self._worker.start()
+        logger = self._logger
+        worker = self._worker
+
+        logger.debug("Starting worker thread")
+        worker.start()
 
     def update_progress(self):
         downloader = self._downloader
@@ -330,16 +354,17 @@ class DownloadForm(tk.Toplevel):
         
 
     def _get_file_list(self, tree):
+        logger = self._logger
 
         def dl_unit_docs(unit, doctype=None):
             name = unit.get_name()
-            dbg("[FileList] Getting %s document list" % (name,))
+            logger.debug("Getting %s document list" % (name,))
             self.set_status("A listar documentos de %s" % (name,))
             downloader = self._downloader
 
             doctypes = None
             if doctype is None:
-                dbg("[FileList] Getting doctypes for %s" % (name,))
+                logger.debug("Getting doctypes for %s" % (name,))
                 doctypes = unit.get_doctypes()
                 doctypes = filter(lambda (k,v): v > 0,
                         unit.get_doctypes().iteritems())
@@ -347,8 +372,6 @@ class DownloadForm(tk.Toplevel):
             else:
                 # I put zero just because. It doesn't get used
                 doctypes = [(doctype, 0)]
-
-            dbg("[FileList] Doctypes: %s" % (str(doctypes),))
 
             all_docs = set()
             for (doctype_, count) in doctypes:
@@ -407,14 +430,12 @@ class DownloadForm(tk.Toplevel):
 
             downloader = self._downloader
 
-            dbg("[FileList] Loading file list")
+            logger.log("Loading file list")
 
             for item in selection:
                 tags = tree.item(item, "tags")
                 if ancestor_selected(tree, item, selection):
                     continue
-
-                dbg("[FileList] Current item %s %s" % (tree.item(item, "text"), str(tags),))
 
                 if "doc" in tags:
                     doc = tree.c_docs[item]
@@ -439,17 +460,17 @@ class DownloadForm(tk.Toplevel):
                     dl_person_docs(person)
 
                 if downloader.has_quit():
-                    dbg("[FileList] Downloader quitted earlier")
+                    logger.debug("Downloader quitted earlier")
                     break
 
                 self.update_progress()
                 
 
         except tk.TclError:
-            dbg("[FileList] A tcl error happened...")
+            logger.error("A tcl error happened...")
 
 
-        dbg("[FileList] Waiting for downloader to finish")
+        logger.debug("Waiting for downloader to finish")
         
         if not downloader.has_quit():
             self.set_status("Listagem dos ficheiros completa")
@@ -462,4 +483,4 @@ class DownloadForm(tk.Toplevel):
             self.update_progress()
             downloader.quit(True)
 
-        dbg("[FileList] File listing done")
+        logger.log("File listing thread done")
