@@ -14,13 +14,18 @@ import ClipUNL
 
 import login
 import download
+import log
 
 VERSION="0.0.3"
 PORTABLE=False
+
+CREDS_FILE = ".clip_credentials.json"
+LOG_FILE = "clip_log.txt"
+
 if not PORTABLE:
-    CREDS_FILE=os.path.join(os.path.expanduser("~"), ".clip_credentials.json")
-else:
-    CREDS_FILE=".clip_credentials.json"
+    USER_HOME = os.path.expanduser("~")
+    CREDS_FILE = os.path.join(USER_HOME, CREDS_FILE)
+    LOG_FILE = os.path.join(USER_HOME, LOG_FILE)
 
 ICON_FILE=None
 IMAGE_DIR="img"
@@ -65,7 +70,9 @@ class Catcher:
 tk.CallWrapper = Catcher
 
 class ClipFiles(tk.Tk):
-    def __init__(self):
+    def __init__(self, logger):
+        logger.debug("Initializing clipFiles main window")
+
         tk.Tk.__init__(self)
         self._images = load_images(IMAGES)
 
@@ -77,6 +84,8 @@ class ClipFiles(tk.Tk):
         self.clip = ClipUNL.ClipUNL()
         self._create_widgets()
         self._dl_form = None
+
+        self.logget = logger
         
         self.protocol('WM_DELETE_WINDOW', self.close)
 
@@ -370,15 +379,28 @@ if __name__ == "__main__":
             print VERSION
             sys.exit(0)
 
+    logger = log.Logger(sys.stdout, True, True, True)
     def populate_tree(app):
         while not (app.populate_tree()):
             pass
 
+    logger.log("CLIP Files v%s starting" % (VERSION,))
+
+    logger.debug("Creating main window")
+    app = ClipFiles(logger)
+    logger.debug("Main window created")
+
     
-    app = ClipFiles()
+    logger.debug("Starting tree view population")
     populate_tree(app)
+    logger.debug("Tree view is being populated")
 
     try:
         app.mainloop()
+        logger.log("Quitted cleanly, where it should")
+
     except Exception as e:
-        print e
+        logger.error("Exception occurred on the main loop")
+
+    logger.log("Goodbye!")
+
