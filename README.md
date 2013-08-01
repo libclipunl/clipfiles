@@ -37,7 +37,7 @@ Erros e melhorias
 -----------------
 
 Este programa tem muito por onde melhorar. É um programa recente e em desenvolvimento.
-Qualquer erro ou sugestão contacte-me via e-mail: david.nonamedguy@gmail.com
+Qualquer erro ou sugestão contacte-me via e-mail: appclipfiles@gmail.com
 
 Se tiver conta no _GitHub_ sugiro que relate erros, apresente sugestões para melhorias, correcções
 ou até mesmo perguntas de utilização na
