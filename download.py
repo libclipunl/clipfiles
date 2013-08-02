@@ -99,15 +99,14 @@ class Downloader():
         dl_path = os.path.join(dl_dir, doc_name)
         try:
             response = urllib2.urlopen(url)
+            logger.log("Downloading %s (%s)" % (doc_name, url))
+            total_size = response.info().getheader('Content-Length').strip()
         except Exception as e:
-            logger.error("[%s] %s (%s)" % (doc_name, url, str(e),))
+            logger.error("[%s] %s (%s)" % (doc_name, url, str(e)))
             self._error.add(doc)
             return
         
-        logger.log("Saving to '%s'" % (os.path.join(sub_dir, doc_name),))
-        total_size = response.info().getheader('Content-Length').strip()
         bytes_read = 0
-        
         out = open(dl_path, "wb")
 
         while True:
@@ -122,6 +121,7 @@ class Downloader():
             if not set_progress is None:
                 set_progress(float(bytes_read) / float(total_size) * 100.0)
             
+        response.close()
         out.close()
         self._finished.add(doc)
 
