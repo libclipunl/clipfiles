@@ -303,6 +303,9 @@ Prima CTRL+clique para seleccionar mais que um item.""")
                                     # If that is the case, let it be and move on...
                                     pass
 
+                except ClipUNL.NetworkError as error:
+                    self._show_network_error(error)
+
                 except tk.TclError:
                     # If there's a TclError, most likely we're
                     # quitting (on Windows at least)
@@ -345,12 +348,18 @@ Prima CTRL+clique para seleccionar mais que um item.""")
                 
             return False
 
+        except ClipUNL.NetworkError as error:
+            self._show_network_error(error)
+
         except ClipUNL.ClipUNLException:
             logger.error("A ClipUNLException occurred. Don't know what to do, bailing out!")
             self.destroy()
             return False
-            
-        
+
+    def _show_network_error(self, error):
+        logger.error("NetworkError exception: %s" % str(error))
+        tkMessageBox.showerror("Erro de Rede", "Houve um erro no acesso \
+à rede. Verifique se está conectado à Internet, e se consegue aceder ao CLIP.")
 
     def do_auth(self, msg):
         self.set_status("A obter credenciais do CLIP")
@@ -365,10 +374,15 @@ Prima CTRL+clique para seleccionar mais que um item.""")
         
         self.set_status("A iniciar sessão no CLIP")
         logger.log("Logging in with CLIP credentials")
-        self.clip.login(
-            unicode(credentials["username"]),
-            unicode(credentials["password"])
-        )
+
+        try:
+            self.clip.login(
+                unicode(credentials["username"]),
+                unicode(credentials["password"])
+            )
+        except ClipUNL.NetworkError as error:
+            logger.error("NetworkError exception: %s" % str(error))
+            self._show_network_error()
 
         if (self.clip.is_logged_in()):
             self.set_status("Sessão iniciada com sucesso")

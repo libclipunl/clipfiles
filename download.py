@@ -9,6 +9,7 @@ import urllib
 import urllib2
 import sys
 import subprocess
+import ClipUNL
 
 # FIXME: Create better icon for downloading files
 ICON_FILE=None
@@ -468,6 +469,11 @@ class DownloadForm(tk.Toplevel):
 
         except tk.TclError:
             logger.error("A tcl error happened...")
+
+        except ClipUNL.NetworkError as error:
+            downloader.quit()
+            logger.error("Network error: %s" % (error,))
+            self.set_status("Erro na rede. Verifique se consegue aceder ao CLIP.")
 
 
         logger.debug("Waiting for downloader to finish")
