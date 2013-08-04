@@ -140,6 +140,7 @@ class ClipFiles(tk.Tk):
             
             tree = ttk.Treeview(frame, selectmode="extended", show="tree", yscrollcommand=scroll.set)
             tree.pack(fill=tk.BOTH, expand=1)
+            tree.lock = threading.RLock()
             
             scroll["command"] = tree.yview
 
@@ -227,13 +228,16 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
         doctypes = sorted(doctypes, 
                 key=lambda dt: ClipUNL.DOC_TYPES[dt[0]])
 
+        lock = tree.lock
         for (doctype, count) in doctypes:
+            lock.acquire()
             child = tree.insert(item, 'end', 
                     text="%s (%d)" % (ClipUNL.DOC_TYPES[doctype], count),
                     tags='doctype')
             tree.c_people[child] = person
             tree.c_units[child] = unit
             tree.c_doctypes[child] = doctype
+            lock.release()
 
     def populate_year(self, item, person, year):
         tree = self._clip_tree
@@ -248,7 +252,9 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
 
         first_person = self.clip.get_people()[0]
 
+        lock = tree.lock
         for unit in units:
+            lock.acquire()
             child = tree.insert(item, 'end', text=unit.get_name(), tags='unit')
             if year == first_year and person == first_person:
                 tree.see(child)
@@ -256,6 +262,7 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
             tree.c_years[child] = year 
             tree.c_units[child] = unit
             unit.tree_item = child
+            lock.release()
 
     def populate_role(self, item, person):
         tree = self._clip_tree
@@ -265,11 +272,15 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
         years = person.get_years()
         years = sorted(years, reverse = True)
 
+        lock = tree.lock
         for year in years:
+            lock.acquire()
             child = tree.insert(item, 'end', text=year, tags='year')
             tree.see(child)
             tree.c_people[child] = person
             tree.c_years[child] = year 
+            lock.release()
+
             self.populate_year(child, person, year)
 
     def populate_tree(self):
@@ -279,12 +290,16 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
             def do_populate(clip, tree, people):
 
                 try:
+                    lock = tree.lock
                     for p in people:
+                        lock.acquire()
                         child = tree.insert('', 'end',
                                 text=p.get_role(),
                                 tags='role')
 
                         tree.c_people[child] = p
+                        lock.release()
+
                         self.populate_role(child, p)
 
                     app.set_status("""Seleccione que conteúdos deseja guardar. \
@@ -327,11 +342,15 @@ Prima CTRL+clique para seleccionar mais que um item.""")
             tree = self._clip_tree
             map(tree.delete, tree.get_children())
 
+            lock = tree.lock
+
+            lock.acquire()
             tree.c_people = {}
             tree.c_years = {}
             tree.c_units = {}
             tree.c_doctypes = {}
             tree.c_docs = {}
+            lock.release()
                 
             logger.log("Launching tree populate thread")
             thread = threading.Thread(target=do_populate,

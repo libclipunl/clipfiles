@@ -26,7 +26,12 @@ def do_download(parent, tree, logger):
     def_dir = os.path.expanduser("~")
     logger.debug("Download process is starting")
 
-    if len(tree.selection()) == 0:
+    lock = tree.lock
+    lock.acquire()
+    selection = tree.selection()
+    lock.release()
+
+    if len(selection) == 0:
         return None
 
     save_to = tkFileDialog.askdirectory(initialdir=def_dir, 
@@ -426,38 +431,63 @@ class DownloadForm(tk.Toplevel):
             return False
 
         try:
-            selection = tree.selection()
             doc_set = set()
 
             downloader = self._downloader
 
             logger.log("Loading file list")
+            
+            lock = tree.lock
+
+            lock.acquire()
+            selection = tree.selection()
+            lock.release()
 
             for item in selection:
+
+                lock.acquire()
                 tags = tree.item(item, "tags")
-                if ancestor_selected(tree, item, selection):
+                anc_sel =  ancestor_selected(tree, item, selection)
+                lock.release()
+
+                if anc_sel:
                     continue
 
                 if "doc" in tags:
+                    lock.acquire()
                     doc = tree.c_docs[item]
+                    lock.release()
+
                     downloader.add_download(doc)
 
                 elif "doctype" in tags:
+                    lock.acquire()
                     unit = tree.c_units[item]
                     doctype = tree.c_doctypes[item]
+                    lock.release()
+
                     dl_unit_docs(unit, doctype)
 
                 elif "unit" in tags:
+                    lock.acquire()
                     unit = tree.c_units[item]
+                    lock.release()
+
                     dl_unit_docs(unit)
 
                 elif "year" in tags:
+                    lock.acquire()
                     person = tree.c_people[item]
                     year = tree.c_years[item]
+                    lock.release()
+
                     dl_year_docs(person, year)
                 
                 elif "role" in tags:
+                    lock.acquire()
                     person = tree.c_people[item]
+                    lock.release()
+
                     dl_person_docs(person)
 
                 if downloader.has_quit():
