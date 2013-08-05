@@ -9,6 +9,7 @@ import sys
 import os
 import traceback
 import threading
+import codecs
 
 import ClipUNL
 
@@ -67,6 +68,10 @@ class ClipFiles(tk.Tk):
         self.clip = ClipUNL.ClipUNL()
         self._create_widgets()
         self._dl_form = None
+
+        tree_worker = threading.Thread(target=self._populate_tree)
+        tree_worker.daemon = True
+        self._tree_worker = tree_worker
         
         self.protocol('WM_DELETE_WINDOW', self.close)
 
@@ -138,8 +143,6 @@ class ClipFiles(tk.Tk):
         status_bar()
 
     def set_status(self, msg):
-        logger = self.logger
-        logger.debug("Main status set: %s" % (msg,))
         self._status.set(msg)
 
     def close(self):
@@ -262,55 +265,59 @@ Visite-nos no Facebook: http://fb.com/AppCLIPFiles""" % (VERSION))
 
             self.populate_year(child, person, year)
 
+    def _populate_tree(self):
+        tree = self._clip_tree
+        clip = self.clip
+
+        try:
+            people = clip.get_people()
+            lock = tree.lock
+            for p in people:
+                lock.acquire()
+                child = tree.insert('', 'end',
+                        text=p.get_role(),
+                        tags='role')
+
+                tree.c_people[child] = p
+                lock.release()
+
+                self.populate_role(child, p)
+
+            app.set_status("""Seleccione que conteúdos deseja guardar. \
+Prima CTRL+clique para seleccionar mais que um item.""")
+
+            for p in people:
+                years = p.get_years()
+                for year in years:
+                    units = p.get_year(year)
+                    for unit in units:
+                        try:
+                            child = unit.tree_item
+                            self.populate_unit(child, p, unit) 
+                        except AttributeError:
+                            # For some reason a unit may be without tree_item
+                            # If that is the case, let it be and move on...
+                            pass
+
+        except ClipUNL.NetworkError as error:
+            self._show_network_error(error)
+
+        except tk.TclError:
+            # If there's a TclError, most likely we're
+            # quitting (on Windows at least)
+            logger.debug("A TclError happened. Most likely, the main window is being destroyed")
+            return
+
+        except RuntimeError:
+            # Error happened? Better quit!
+            # (Same thing as above, but on Linux a least...)
+            logger.debug("A RuntimeError happened. Most likely, the main window is being destroyed")
+            return
+
     def populate_tree(self):
         logger = self.logger
         logger.log("Starting tree populate thread")
         try:
-            def do_populate(clip, tree, people):
-
-                try:
-                    lock = tree.lock
-                    for p in people:
-                        lock.acquire()
-                        child = tree.insert('', 'end',
-                                text=p.get_role(),
-                                tags='role')
-
-                        tree.c_people[child] = p
-                        lock.release()
-
-                        self.populate_role(child, p)
-
-                    app.set_status("""Seleccione que conteúdos deseja guardar. \
-Prima CTRL+clique para seleccionar mais que um item.""")
-
-                    for p in people:
-                        years = p.get_years()
-                        for year in years:
-                            units = p.get_year(year)
-                            for unit in units:
-                                try:
-                                    child = unit.tree_item
-                                    self.populate_unit(child, p, unit) 
-                                except AttributeError:
-                                    # For some reason a unit may be without tree_item
-                                    # If that is the case, let it be and move on...
-                                    pass
-
-                except ClipUNL.NetworkError as error:
-                    self._show_network_error(error)
-
-                except tk.TclError:
-                    # If there's a TclError, most likely we're
-                    # quitting (on Windows at least)
-                    logger.debug("A TclError happened. Most likely, the main window is being destroyed")
-                    return
-
-                except RuntimeError:
-                    # Error happened? Better quit!
-                    # (Same thing as above, but on Linux a least...)
-                    logger.debug("A RuntimeError happened. Most likely, the main window is being destroyed")
-                    return
             
             clip = self.clip
             self.set_status("A carregar dados... Por favor aguarde")
@@ -332,8 +339,7 @@ Prima CTRL+clique para seleccionar mais que um item.""")
             lock.release()
                 
             logger.log("Launching tree populate thread")
-            thread = threading.Thread(target=do_populate,
-                    args=(clip, tree, people))
+            thread = self._tree_worker
             thread.start()
 
             return True
@@ -342,7 +348,8 @@ Prima CTRL+clique para seleccionar mais que um item.""")
             logger.debug("User is not logged in. Asking for credencials")
             if not self.do_auth(None):
                 logger.log("User gave up on authenticating. Quitting the hard way.")
-                sys.exit(0)
+                return None
+                #sys.exit(0)
                 
             return False
 
@@ -352,7 +359,7 @@ Prima CTRL+clique para seleccionar mais que um item.""")
         except ClipUNL.ClipUNLException:
             logger.error("A ClipUNLException occurred. Don't know what to do, bailing out!")
             self.destroy()
-            return False
+            return None
 
     def _show_network_error(self, error):
         logger.error("NetworkError exception: %s" % str(error))
@@ -430,6 +437,16 @@ Prima CTRL+clique para seleccionar mais que um item.""")
         dialog = login.LoginForm(self, creds, status)
         return dialog.result
 
+    def join(self):
+        worker = self._tree_worker
+        logger = self.logger
+        if not worker is None:
+            logger.debug("Waiting for tree worker to finish") 
+            try:
+                worker.join()
+            except RuntimeError:
+                pass
+
 if __name__ == "__main__":
     # Check if only asking for version
     if len(sys.argv) > 1:
@@ -437,10 +454,17 @@ if __name__ == "__main__":
             print VERSION
             sys.exit(0)
 
-    logger = log.Logger(sys.stdout, True, True, True)
+    log_file = codecs.open(LOG_FILE, "w", "utf-8") 
+    logger = log.Logger(log_file, True, True, True)
+
     def populate_tree(app):
-        while not (app.populate_tree()):
-            pass
+        while (True):
+            success = app.populate_tree()
+            if success is None:
+                return False
+            elif success is True:
+                return True
+
 
     logger.log("CLIP Files v%s starting" % (VERSION,))
 
@@ -449,17 +473,20 @@ if __name__ == "__main__":
     logger.debug("Main window created")
 
     
-    logger.debug("Starting tree view population")
-    populate_tree(app)
-    logger.debug("Tree view is being populated")
-
     try:
-        app.mainloop()
+        logger.debug("Starting tree view population")
+        if populate_tree(app):
+            logger.debug("Tree view is being populated")
+            app.mainloop()
+
         logger.log("Quitted cleanly, where it should")
 
     except Exception as e:
-        logger.error("Exception occurred on the window's main loop")
+        logger.error("Exception occurred on the window's main loop: %s" % str(e))
+
+    app.join()
 
     logger.log("Goodbye!")
+    log_file.close()
     sys.exit(0)
 
