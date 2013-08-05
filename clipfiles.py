@@ -52,27 +52,6 @@ def load_images(images):
 
     return loaded_images
 
-
-def dbg(msg):
-    if DEBUG: print msg
-
-class Catcher: 
-    def __init__(self, func, subst, widget):
-        self.func = func 
-        self.subst = subst
-        self.widget = widget
-    def __call__(self, *args):
-        try:
-            if self.subst:
-                args = apply(self.subst, args)
-            return apply(self.func, args)
-        except SystemExit, msg:
-            raise SystemExit, msg
-        except:
-            traceback.print_exc(sys.stdout)
-
-tk.CallWrapper = Catcher
-
 class ClipFiles(tk.Tk):
     def __init__(self, logger):
         logger.debug("Initializing clipFiles main window")
@@ -140,7 +119,7 @@ class ClipFiles(tk.Tk):
             
             tree = ttk.Treeview(frame, selectmode="extended", show="tree", yscrollcommand=scroll.set)
             tree.pack(fill=tk.BOTH, expand=1)
-            tree.lock = threading.RLock()
+            tree.lock = threading.Lock()
             
             scroll["command"] = tree.yview
 
