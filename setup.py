@@ -52,7 +52,7 @@ download all their documents, assignments and exames, with few clicks""",
         author='David Serrano',
         author_email='david.nonamedguy@gmail.com',
         url="https://github.com/libclipunl/clipfiles",
-        requires=['pyclipunl (>=0.0.4)'],
+        requires=['pyclipunl (>=0.0.6)'],
         license='MIT',
         executables = [Executable("clipfiles.py", base = base, icon = icon, compress = True, shortcutName = "CLIP Files")],
 
