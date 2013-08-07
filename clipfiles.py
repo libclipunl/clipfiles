@@ -17,7 +17,7 @@ import login
 import download
 import log
 
-VERSION="0.0.4"
+VERSION="0.0.4.1"
 PORTABLE=False
 
 CREDS_FILE = ".clip_credentials.json"

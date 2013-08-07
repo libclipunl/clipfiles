@@ -52,7 +52,7 @@ download all their documents, assignments and exames, with few clicks""",
         author='David Serrano',
         author_email='david.nonamedguy@gmail.com',
         url="https://github.com/libclipunl/clipfiles",
-        requires=['pyclipunl (>=0.0.6)'],
+        requires=['pyclipunl (>=0.0.7)'],
         license='MIT',
         executables = [Executable("clipfiles.py", base = base, icon = icon, compress = True, shortcutName = "CLIP Files")],
 
@@ -82,7 +82,6 @@ if sys.platform == "win32":
                     "/dMyAppVersion=%s" % (VERSION,),
                     ISS_FILE
                 ]
-                print call
                 subprocess.call(call)
 
                 print "Inno Setup package build successfully"
